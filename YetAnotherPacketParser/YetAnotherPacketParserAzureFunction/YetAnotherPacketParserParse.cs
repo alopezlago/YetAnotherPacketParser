@@ -22,6 +22,16 @@ namespace YetAnotherPacketParserAzureFunction
 
     public static class YetAnotherPacketParserParse
     {
+        [FunctionName("Test")]
+        public static Task<IActionResult> Run2(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest request,
+            ILogger log)
+        {
+            log.LogInformation("Called Test");
+            return Task.FromResult<IActionResult>(
+                new OkObjectResult("Yes, you sent a request of size " + request.ContentLength + " with verb " + request.Method));
+        }
+
         [FunctionName("ParseDocx")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request,
