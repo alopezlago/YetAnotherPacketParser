@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ganss.XSS;
 using YetAnotherPacketParser.Ast;
 
@@ -7,12 +8,23 @@ namespace YetAnotherPacketParser.Compiler
 {
     public class SanitizeHtmlTransformer
     {
+        private const int MaxCachedFragmentLength = 10;
+
         public SanitizeHtmlTransformer()
         {
-            this.Sanitizer = new HtmlSanitizer(allowedTags: Array.Empty<string>());
+            // Packet text should have no HTML (tags, CSS, styles, etc.)
+            this.Sanitizer = new HtmlSanitizer(
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                Array.Empty<string>());
+            this.CachedShortSegments = new Dictionary<string, string>();
         }
 
         private HtmlSanitizer Sanitizer { get; }
+
+        private Dictionary<string, string> CachedShortSegments { get; }
 
         public PacketNode Sanitize(PacketNode node)
         {
@@ -26,7 +38,7 @@ namespace YetAnotherPacketParser.Compiler
 
         private TossupsNode SanitizeTossups(TossupsNode node)
         {
-            List<TossupNode> sanitizedTossups = new List<TossupNode>();
+            List<TossupNode> sanitizedTossups = new List<TossupNode>(node.Tossups.Count());
             foreach (TossupNode tossup in node.Tossups)
             {
                 sanitizedTossups.Add(this.SanitizeTossup(tossup));
@@ -47,7 +59,7 @@ namespace YetAnotherPacketParser.Compiler
 
         private BonusesNode SanitizeBonuses(BonusesNode node)
         {
-            List<BonusNode> sanitizedBonuses = new List<BonusNode>();
+            List<BonusNode> sanitizedBonuses = new List<BonusNode>(node.Bonuses.Count());
             foreach (BonusNode bonus in node.Bonuses)
             {
                 sanitizedBonuses.Add(this.SanitizeBonus(bonus));
@@ -94,11 +106,24 @@ namespace YetAnotherPacketParser.Compiler
 
         private FormattedText SanitizeFormattedTexts(FormattedText rawFormattedTexts)
         {
-            List<FormattedTextSegment> sanitizedFormattedTexts = new List<FormattedTextSegment>();
+            List<FormattedTextSegment> sanitizedFormattedTexts = new List<FormattedTextSegment>(
+                rawFormattedTexts.Segments.Count());
             foreach (FormattedTextSegment rawSegment in rawFormattedTexts.Segments)
             {
+                // Caching short segments improved perf by 5-10% in release builds. Sanitizing FormattedTexts takes the
+                //  majority of the time for the whole compilation cycle (lex, parse, compile).
+                string sanitizedText;
+                if (rawSegment.Text.Length > MaxCachedFragmentLength || !this.CachedShortSegments.TryGetValue(
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type. We only put non-null strings here
+                    rawSegment.Text, out sanitizedText))
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+                {
+                    sanitizedText = this.Sanitizer.Sanitize(rawSegment.Text);
+                    this.CachedShortSegments[rawSegment.Text] = sanitizedText;
+                }
+
                 FormattedTextSegment sanitizedFormattedText = new FormattedTextSegment(
-                    this.Sanitizer.Sanitize(rawSegment.Text),
+                    sanitizedText,
                     rawSegment.Italic,
                     rawSegment.Bolded,
                     rawSegment.Underlined);

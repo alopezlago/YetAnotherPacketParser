@@ -11,6 +11,13 @@ namespace YetAnotherPacketParser.Compiler
 {
     public class JsonCompiler : ICompiler
     {
+        public JsonCompiler(JsonCompilerOptions? options = null)
+        {
+            this.Options = options ?? JsonCompilerOptions.Default;
+        }
+
+        private JsonCompilerOptions Options { get; }
+
         public async Task<string> CompileAsync(PacketNode packet)
         {
             Verify.IsNotNull(packet, nameof(packet));
@@ -25,17 +32,16 @@ namespace YetAnotherPacketParser.Compiler
 
             using (Stream stream = new MemoryStream())
             {
-                // TODO: WriteIndented should be an option
-                JsonSerializerOptions options = new JsonSerializerOptions()
+                JsonSerializerOptions serializerOptions = new JsonSerializerOptions()
                 {
                     AllowTrailingCommas = true,
                     PropertyNamingPolicy = new PascalCaseJsonNamingPolicy(),
-                    WriteIndented = true
+                    WriteIndented = this.Options.PrettyPrint
                 };
 
                 // TODO: If we decide to host this directly in an ASP.Net context, remove ConfigureAwait calls
                 // see https://devblogs.microsoft.com/dotnet/configureawait-faq/
-                await JsonSerializer.SerializeAsync(stream, sanitizedJsonPacket, options).ConfigureAwait(false);
+                await JsonSerializer.SerializeAsync(stream, sanitizedJsonPacket, serializerOptions).ConfigureAwait(false);
 
                 // Reset the stream
                 stream.Position = 0;
@@ -101,7 +107,10 @@ namespace YetAnotherPacketParser.Compiler
 
         private class PascalCaseJsonNamingPolicy : JsonNamingPolicy
         {
-            [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "")]
+            [SuppressMessage(
+                "Globalization",
+                "CA1308:Normalize strings to uppercase",
+                Justification = "Pascal case requires lowercasing strings")]
             public override string ConvertName(string name)
             {
                 // Names will not be null or empty

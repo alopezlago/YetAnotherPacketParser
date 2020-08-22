@@ -3,6 +3,8 @@
 
 # Azure Functions localsettings file
 local.settings.json
+appInsights1.arm.json
+profile.arm.json
 
 # User-specific files
 *.suo
