@@ -4,6 +4,11 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Nullable>enable</Nullable>
+    <AssemblyName>YetAnotherPacketParserCommandLine</AssemblyName>
+    <Authors>Alejandro Lopez-Lago</Authors>
+    <Copyright>(c) 2020 Alejandro Lopez-Lago</Copyright>
+    <Description>Yet Another Packet Parser parses quiz bowl packets and translates them to different formats</Description>
+    <Product>YAPP</Product>
   </PropertyGroup>
 
   <ItemGroup>

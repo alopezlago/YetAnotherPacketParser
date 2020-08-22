@@ -22,6 +22,16 @@ namespace YetAnotherPacketParserAzureFunction
 
     public static class YetAnotherPacketParserParse
     {
+        [FunctionName("Test")]
+        public static Task<IActionResult> Run2(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest request,
+            ILogger log)
+        {
+            log.LogInformation("Called Test");
+            return Task.FromResult<IActionResult>(
+                new OkObjectResult("Yes, you sent a request of size " + request.ContentLength + " with verb " + request.Method));
+        }
+
         [FunctionName("ParseDocx")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request,
@@ -49,18 +59,8 @@ namespace YetAnotherPacketParserAzureFunction
                 return GetBadRequest("Body is required");
             }
 
-            int maximumLineCountBeforeNextStage = 1;
-            if (request.Query.TryGetValue("lineTolerance", out StringValues values) &&
-                values.Count > 0 &&
-                int.TryParse(values[0], out maximumLineCountBeforeNextStage))
-            {
-                log.LogInformation($"Parsed tolerance: {maximumLineCountBeforeNextStage}");
-            }
-            else
-            {
-                maximumLineCountBeforeNextStage = 1;
-                log.LogInformation("Using the default tolerance");
-            }
+            GetOptions(
+                request, log, out int maximumLineCountBeforeNextStage, out bool prettyPrint, out string outputFormat);
 
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -92,8 +92,25 @@ namespace YetAnotherPacketParserAzureFunction
             long timeInMsParse = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
 
-            JsonCompiler compiler = new JsonCompiler();
-            string json = await compiler.CompileAsync(packetNodeResult.Value).ConfigureAwait(false);
+            string result = string.Empty;
+            if ("json".Equals(outputFormat, StringComparison.CurrentCultureIgnoreCase))
+            {
+                JsonCompilerOptions compilerOptions = new JsonCompilerOptions()
+                {
+                    PrettyPrint = prettyPrint
+                };
+                JsonCompiler jsonCompiler = new JsonCompiler(compilerOptions);
+                result = await jsonCompiler.CompileAsync(packetNodeResult.Value).ConfigureAwait(false);
+            }
+            else if ("html".Equals(outputFormat, StringComparison.CurrentCultureIgnoreCase))
+            {
+                HtmlCompiler htmlCompiler = new HtmlCompiler();
+                result = await htmlCompiler.CompileAsync(packetNodeResult.Value).ConfigureAwait(false);
+            }
+            else
+            {
+                return GetBadRequest($"Compile error: invalid format. Must be json or html");
+            }
 
             stopwatch.Stop();
             long timeInMsCompile = stopwatch.ElapsedMilliseconds;
@@ -103,7 +120,7 @@ namespace YetAnotherPacketParserAzureFunction
                 $"Lex {timeInMsLines}ms, Parse {timeInMsParse}ms, Jsonify {timeInMsCompile}ms. Total: {totalTimeMs}ms " +
                 $"({timeInMsLines},{timeInMsParse},{timeInMsCompile}");
 
-            return new OkObjectResult(json);
+            return new OkObjectResult(result);
         }
 
         private static BadRequestObjectResult GetBadRequest(string errorMessage)
@@ -111,6 +128,59 @@ namespace YetAnotherPacketParserAzureFunction
             ModelStateDictionary modelErrors = new ModelStateDictionary();
             modelErrors.AddModelError("errorMessage", errorMessage);
             return new BadRequestObjectResult(modelErrors);
+        }
+
+        private static void GetOptions(
+            HttpRequest request,
+            ILogger log,
+            out int maximumLineCountBeforeNextStage,
+            out bool prettyPrint,
+            out string outputFormat)
+        {
+            if (TryGetStringValueFromQuery(request, "lineTolerance", out string stringValue) &&
+                int.TryParse(stringValue, out maximumLineCountBeforeNextStage) &&
+                maximumLineCountBeforeNextStage > 0)
+            {
+                log.LogInformation($"Parsed tolerance: {maximumLineCountBeforeNextStage}");
+            }
+            else
+            {
+                maximumLineCountBeforeNextStage = 1;
+                log.LogInformation("Using the default tolerance");
+            }
+
+            if (TryGetStringValueFromQuery(request, "prettyPrint", out stringValue) &&
+                bool.TryParse(stringValue, out prettyPrint))
+            {
+                log.LogInformation($"Parsed prettyPrint: {prettyPrint}");
+            }
+            else
+            {
+                prettyPrint = false;
+                log.LogInformation("Using the default pretty print setting");
+            }
+
+            if (TryGetStringValueFromQuery(request, "format", out outputFormat))
+            {
+                log.LogInformation($"Parsed format: {outputFormat}");
+            }
+            else
+            {
+                outputFormat = "json";
+                log.LogInformation("Using the default format");
+            }
+        }
+
+        private static bool TryGetStringValueFromQuery(HttpRequest request, string key, out string stringValue)
+        {
+            if (request.Query.TryGetValue(key, out StringValues values) && values.Count > 0)
+            {
+                stringValue = values[0];
+                return true;
+            }
+
+            stringValue = null;
+            return false;
         }
     }
 }

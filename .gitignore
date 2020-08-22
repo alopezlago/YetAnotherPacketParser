@@ -338,4 +338,5 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
-/YetAnotherPacketParser/YetAnotherPacketParserAzureFunction/Properties/ServiceDependencies/YetAnotherPacketParserAzureFunction - Zip Deploy/profile.arm.json
+/YetAnotherPacketParser/YetAnotherPacketParserAzureFunction/*/profile.arm.json
+/YetAnotherPacketParser/YetAnotherPacketParserAzureFunction/*/appInsights1.arm.json

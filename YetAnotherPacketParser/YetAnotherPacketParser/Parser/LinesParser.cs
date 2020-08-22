@@ -99,7 +99,16 @@ namespace YetAnotherPacketParser.Parser
         {
             // Skip lines until we get to the next question
             line = null;
-            if (lines.Current == null)
+            try
+            {
+                // In certain cases (split bonus part line), we'll seek out a new line even if we've reached the end.
+                // Instead of failing, report that we can't get the next question line.
+                if (lines.Current == null)
+                {
+                    return false;
+                }
+            }
+            catch (InvalidOperationException)
             {
                 return false;
             }
