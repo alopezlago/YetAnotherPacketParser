@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CommandLine;
 using YetAnotherPacketParser;
@@ -26,8 +28,7 @@ namespace YetAnotherPacketParserCommandLine
             //   change in parsing logic, where we do a lookahead and find answers, or go back after finding an answer
             // - Add tests for
             //     - LineParser (different failure modes, successes with different line modes)
-            // - Add HTML as an output
-            // - Add web site
+            // - Accept zips of files
             // - Add HTML as an input
 
             await Parser.Default.ParseArguments<CommandLineOptions>(args)
@@ -36,6 +37,12 @@ namespace YetAnotherPacketParserCommandLine
 
         private static async Task RunAsync(CommandLineOptions options)
         {
+            if (!IsValidFormat(options))
+            {
+                Console.Error.WriteLine("Invalid format. Valid formats: json, html");
+                return;
+            }
+
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -43,18 +50,15 @@ namespace YetAnotherPacketParserCommandLine
             IResult<IEnumerable<Line>> linesResult = await lexer.GetLines(options.Input);
 
             long timeInMsLines = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
 
-            if (linesResult.Success)
-            {
-                // Console.WriteLine(string.Join("\n> ", linesResult.Value.Select(line => line.Text)));
-            }
-            else
+            if (!linesResult.Success)
             {
                 Console.Error.WriteLine("Lex error: " + linesResult.ErrorMessage);
                 return;
             }
 
-            // Console.WriteLine("------");
+            Console.WriteLine("Lexing complete.");
 
             LinesParserOptions parserOptions = new LinesParserOptions()
             {
@@ -62,34 +66,74 @@ namespace YetAnotherPacketParserCommandLine
             };
             LinesParser parser = new LinesParser(parserOptions);
             IResult<PacketNode> packetNodeResult = parser.Parse(linesResult.Value);
-            if (packetNodeResult.Success)
-            {
-                // Console.WriteLine(packetNodeResult.Value);
-            }
-            else
+
+            long timeInMsParse = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
+
+            if (!packetNodeResult.Success)
             {
                 Console.Error.WriteLine("Parse error: " + packetNodeResult.ErrorMessage);
                 return;
             }
 
-            long timeInMsParse = stopwatch.ElapsedMilliseconds;
+            PacketNode packetNode = packetNodeResult.Value;
+            int tossupsCount = packetNode.Tossups.Tossups.Count();
+            int bonusesCount = packetNode.Bonuses?.Bonuses.Count() ?? 0;
+            Console.WriteLine($"Parsing complete. {tossupsCount} tossup(s), {bonusesCount} bonus(es).");
 
-            // Console.WriteLine("------");
-
-            JsonCompiler compiler = new JsonCompiler();
-            string json = await compiler.CompileAsync(packetNodeResult.Value).ConfigureAwait(false);
+            string outputContents = await Compile(packetNode, options).ConfigureAwait(false);
 
             stopwatch.Stop();
             long timeInMsCompile = stopwatch.ElapsedMilliseconds;
 
-            Console.WriteLine(json);
-            File.WriteAllText(options.Output, json);
+            Console.WriteLine("Compilation complete.");
 
-            Console.WriteLine("-----");
+            if (string.IsNullOrEmpty(outputContents))
+            {
+                Console.Error.WriteLine("No output to write. Did you choose a correct format (json, html)?");
+                return;
+            }
+
+            try
+            {
+                File.WriteAllText(options.Output, outputContents);
+            }
+            catch (IOException ex)
+            {
+                Console.Error.WriteLine($"Could not write to output {options.Output}. Reason: {ex.Message}");
+                return;
+            }
+
+            long totalTimeMs = timeInMsLines + timeInMsParse + timeInMsCompile;
             Console.WriteLine(
-                $"Lex {timeInMsLines}ms, Parse {timeInMsParse - timeInMsLines}ms, Jsonify {timeInMsCompile - timeInMsParse}ms. Total: {timeInMsCompile}ms");
+                $"Lex {timeInMsLines}ms, Parse {timeInMsParse}ms, Compile {timeInMsCompile}ms. Total: {totalTimeMs}ms ");
+            Console.WriteLine($"Output written to {options.Output}");
+        }
 
-            Console.ReadLine();
+        private static async Task<string> Compile(PacketNode packetNode, CommandLineOptions options)
+        {
+            string format = options.OutputFormat.ToUpper(CultureInfo.CurrentCulture);
+            switch (format)
+            {
+                case "JSON":
+                    JsonCompilerOptions compilerOptions = new JsonCompilerOptions()
+                    {
+                        PrettyPrint = options.PrettyPrint
+                    };
+                    JsonCompiler compiler = new JsonCompiler(compilerOptions);
+                    return await compiler.CompileAsync(packetNode).ConfigureAwait(false);
+                case "HTML":
+                    HtmlCompiler htmlCompiler = new HtmlCompiler();
+                    return await htmlCompiler.CompileAsync(packetNode).ConfigureAwait(false);
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static bool IsValidFormat(CommandLineOptions options)
+        {
+            return !"json".Equals(options.OutputFormat, StringComparison.CurrentCultureIgnoreCase) ||
+                !"html".Equals(options.OutputFormat, StringComparison.CurrentCultureIgnoreCase);
         }
     }
 }

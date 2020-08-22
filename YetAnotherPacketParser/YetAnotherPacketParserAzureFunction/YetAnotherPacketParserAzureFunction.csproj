@@ -2,8 +2,14 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
+    <Description>Yet Another Packet Parser Azure Function parses quiz bowl packets and translates them to different formats</Description>
+    <Copyright>(c) 2020 Alejandro Lopez-Lago</Copyright>
+    <AssemblyName>YetAnotherPacketParserAzureFunction</AssemblyName>
+    <Authors>Alejandro Lopez-Lago</Authors>
+    <Product>YAPP Azure Function</Product>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.14.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.3" />
   </ItemGroup>
   <ItemGroup>
