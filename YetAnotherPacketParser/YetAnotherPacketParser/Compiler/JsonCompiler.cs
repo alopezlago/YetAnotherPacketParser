@@ -128,7 +128,7 @@ namespace YetAnotherPacketParser.Compiler
 
                 this.Tossups = new List<JsonTossupNode>();
 
-                foreach (TossupNode tossupNode in node.Tossups.Tossups)
+                foreach (TossupNode tossupNode in node.Tossups)
                 {
                     this.Tossups.Add(new JsonTossupNode(tossupNode));
                 }
@@ -136,7 +136,7 @@ namespace YetAnotherPacketParser.Compiler
                 if (node.Bonuses != null)
                 {
                     this.Bonuses = new List<JsonBonusNode>();
-                    foreach (BonusNode bonusNode in node.Bonuses.Bonuses)
+                    foreach (BonusNode bonusNode in node.Bonuses)
                     {
                         this.Bonuses.Add(new JsonBonusNode(bonusNode));
                     }
@@ -178,7 +178,7 @@ namespace YetAnotherPacketParser.Compiler
                 this.Leadin = ToStringWithTags(bonusNode.Leadin);
                 this.Leadin_sanitized = ToStringWithoutTags(bonusNode.Leadin);
 
-                IEnumerable<BonusPartNode> partNodes = bonusNode.Parts.Parts;
+                IEnumerable<BonusPartNode> partNodes = bonusNode.Parts;
                 this.Answers = new List<string>();
                 this.Answers_sanitized = new List<string>();
                 this.Parts = new List<string>();

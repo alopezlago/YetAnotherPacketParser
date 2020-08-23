@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace YetAnotherPacketParser.Ast
 {
-    public class TossupNode : INode
+    public class TossupNode
     {
         public TossupNode(int number, QuestionNode question, string? editorsNote = null)
         {
@@ -11,9 +11,6 @@ namespace YetAnotherPacketParser.Ast
             this.Number = number;
             this.Question = question ?? throw new ArgumentNullException(nameof(question));
         }
-
-        [JsonIgnore]
-        public NodeType Type => NodeType.Tossup;
 
         public string? EditorsNote { get; }
 
