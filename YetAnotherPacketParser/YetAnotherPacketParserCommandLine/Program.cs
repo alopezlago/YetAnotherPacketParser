@@ -77,8 +77,8 @@ namespace YetAnotherPacketParserCommandLine
             }
 
             PacketNode packetNode = packetNodeResult.Value;
-            int tossupsCount = packetNode.Tossups.Tossups.Count();
-            int bonusesCount = packetNode.Bonuses?.Bonuses.Count() ?? 0;
+            int tossupsCount = packetNode.Tossups.Count();
+            int bonusesCount = packetNode.Bonuses?.Count() ?? 0;
             Console.WriteLine($"Parsing complete. {tossupsCount} tossup(s), {bonusesCount} bonus(es).");
 
             string outputContents = await Compile(packetNode, options).ConfigureAwait(false);

@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace YetAnotherPacketParser.Ast
 {
     public class BonusNode : INode
     {
-        public BonusNode(int number, FormattedText leadin, BonusPartsNode parts, string? editorsNote)
+        public BonusNode(int number, FormattedText leadin, IEnumerable<BonusPartNode> parts, string? editorsNote)
         {
             this.EditorsNote = editorsNote;
             this.Leadin = leadin ?? throw new ArgumentNullException(nameof(leadin));
@@ -22,7 +23,6 @@ namespace YetAnotherPacketParser.Ast
 
         public int Number { get; }
 
-        // May want this to be their own nodes
-        public BonusPartsNode Parts { get; }
+        public IEnumerable<BonusPartNode> Parts { get; }
     }
 }

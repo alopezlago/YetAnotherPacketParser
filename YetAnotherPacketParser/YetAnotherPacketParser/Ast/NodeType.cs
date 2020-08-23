@@ -4,11 +4,8 @@
     {
         Question,
         Tossup,
-        Tossups,
         Bonus,
-        Bonuses,
         BonusPart,
-        BonusParts,
         Packet
     }
 }
