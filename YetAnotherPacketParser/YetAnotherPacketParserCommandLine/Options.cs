@@ -7,15 +7,17 @@ namespace YetAnotherPacketParserCommandLine
         // DEFT doesn't work because their bonusese use A./B./C. for parts
 
         // TODO: Change defaults
-        [Option('i', "input", HelpText = "Path to the docx packet", Default = @"D:\qbsets\Fall2015\Berkeley B + MIT A.docx")]
+        //[Option('i', "input", HelpText = "Path to the docx packet", Default = @"D:\qbsets\Fall2015\Berkeley B + MIT A.docx")]
         //[Option('i', "input", HelpText = "Path to the docx packet", Default = @"D:\qbsets\CALISTO2020\Packet 1.docx")]
+        [Option('i', "input", HelpText = "Path to the docx packet", Default = @"D:\qbsets\CALISTO-packets-docx.zip")]
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable. This is set by a
         // default option
         public string Input { get; set; }
 
         //[Option('o', "output", HelpText = "Path to write the translated packet to", Default = @"D:\qbsets\BerkBMitA_parsedJson.json")]
         //[Option('o', "output", HelpText = "Path to the json output", Default = @"D:\qbsets\CALISTO2020_packet1.json")]
-        [Option('o', "output", HelpText = "Path to the json output", Default = @"D:\qbsets\BerkBMitA_parsedHtml.html")]
+        //[Option('o', "output", HelpText = "Path to the json output", Default = @"D:\qbsets\BerkBMitA_parsedHtml.html")]
+        [Option('o', "output", HelpText = "Path to the json output", Default = @"D:\qbsets\CALISTO-packets-docx-parsed.zip")]
         public string Output { get; set; }
 
         [Option(
