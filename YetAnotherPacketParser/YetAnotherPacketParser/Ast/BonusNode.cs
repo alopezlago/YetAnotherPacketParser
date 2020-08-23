@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace YetAnotherPacketParser.Ast
 {
-    public class BonusNode : INode
+    public class BonusNode
     {
         public BonusNode(int number, FormattedText leadin, IEnumerable<BonusPartNode> parts, string? editorsNote)
         {
@@ -13,9 +12,6 @@ namespace YetAnotherPacketParser.Ast
             this.Number = number;
             this.Parts = parts ?? throw new ArgumentNullException(nameof(parts));
         }
-
-        [JsonIgnore]
-        public NodeType Type => NodeType.Bonus;
 
         public string? EditorsNote { get; }
 

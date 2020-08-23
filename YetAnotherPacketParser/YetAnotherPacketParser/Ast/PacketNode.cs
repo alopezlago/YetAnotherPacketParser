@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace YetAnotherPacketParser.Ast
 {
-    public class PacketNode : INode
+    public class PacketNode
     {
         public PacketNode(IEnumerable<TossupNode> tossups, IEnumerable<BonusNode>? bonuses)
         {
             this.Tossups = tossups ?? throw new ArgumentNullException(nameof(tossups));
             this.Bonuses = bonuses;
         }
-
-        [JsonIgnore]
-        public NodeType Type => NodeType.Packet;
 
         public IEnumerable<TossupNode> Tossups { get; }
 
