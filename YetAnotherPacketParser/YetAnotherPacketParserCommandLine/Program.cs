@@ -55,13 +55,6 @@ namespace YetAnotherPacketParserCommandLine
             {
                 outputResults = await StreamTranslator.GetCompiledOutputs(
                     options.Input, fileStream, (name, document) => CompileDocument(name, document, options));
-
-                // We'll need something more than Stream. Could be stream with the name?
-                ////IEnumerable<Task<string>> compileTasks = outputResults.Value
-                ////    .Select(stream => CompileDocument(string.Empty, stream, options));
-                ////string[] compiledOutputs = await Task.WhenAll(compileTasks);
-
-                // TODO: don't return a string array, just do it (or return a list of IResults)
             }
 
             int resultsCount = outputResults.Count();
@@ -85,54 +78,41 @@ namespace YetAnotherPacketParserCommandLine
                 }
 
                 Console.WriteLine($"Output written to {options.Output}");
-                return;
             }
-
-            // Write zip file. See if we need to delete old ones
-            // Yes it does, so TODO TODO That
-            bool outputFormatIsJson = options.OutputFormat.ToUpper(CultureInfo.CurrentCulture) == "JSON";
-            IEnumerable<CompileResult> successResults = outputResults.Where(result => result.Result.Success);
-            using (ZipArchive outputArchive = ZipFile.Open(options.Output, ZipArchiveMode.Create))
+            else
             {
-                foreach (CompileResult compileResult in successResults)
+                // Write zip file. See if we need to delete old ones
+                // Yes it does, so TODO TODO That
+                bool outputFormatIsJson = options.OutputFormat.ToUpper(CultureInfo.CurrentCulture) == "JSON";
+                IEnumerable<CompileResult> successResults = outputResults.Where(result => result.Result.Success);
+                using (ZipArchive outputArchive = ZipFile.Open(options.Output, ZipArchiveMode.Create))
                 {
-                    string newFilename = outputFormatIsJson ?
-                        compileResult.Filename.Replace(".docx", ".json") :
-                        compileResult.Filename.Replace(".docx", ".html");
-                    ZipArchiveEntry entry = outputArchive.CreateEntry(newFilename);
-
-                    // We can't do this asynchronously, because it complains about writing to the same ZipArchive stream
-                    using (StreamWriter writer = new StreamWriter(entry.Open()))
+                    foreach (CompileResult compileResult in successResults)
                     {
-                        writer.Write(compileResult.Result.Value);
+                        string newFilename = outputFormatIsJson ?
+                            compileResult.Filename.Replace(".docx", ".json") :
+                            compileResult.Filename.Replace(".docx", ".html");
+                        ZipArchiveEntry entry = outputArchive.CreateEntry(newFilename);
+
+                        // We can't do this asynchronously, because it complains about writing to the same ZipArchive stream
+                        using (StreamWriter writer = new StreamWriter(entry.Open()))
+                        {
+                            writer.Write(compileResult.Result.Value);
+                        }
                     }
+                }
+
+                Console.WriteLine();
+                Console.WriteLine($"Succesfully parsed {successResults.Count()} out of {outputResults.Count()} packets");
+                IEnumerable<CompileResult> failedResults = outputResults
+                    .Where(result => !result.Result.Success)
+                    .OrderBy(result => result.Filename);
+                foreach (CompileResult compileResult in failedResults)
+                {
+                    Console.Error.WriteLine($"{compileResult.Filename} failed to compile. Error: {compileResult.Result.ErrorMessage}");
                 }
             }
 
-            Console.WriteLine();
-            Console.WriteLine($"Succesfully parsed {successResults.Count()} out of {outputResults.Count()} packets");
-            IEnumerable<CompileResult> failedResults = outputResults
-                .Where(result => !result.Result.Success)
-                .OrderBy(result => result.Filename);
-            foreach (CompileResult compileResult in failedResults)
-            {
-                Console.Error.WriteLine($"{compileResult.Filename} failed to compile. Error: {compileResult.Result.ErrorMessage}");
-            }
-            ////try
-            ////{
-            ////    using (FileStream fileStream = new FileStream(options.Input, FileMode.Open, FileAccess.Read, FileShare.Read))
-            ////    {
-            ////        string outputContents = await CompileDocument(options.Input, fileStream, options);
-            ////        File.WriteAllText(options.Output, outputContents);
-            ////    }
-            ////}
-            ////catch (IOException ex)
-            ////{
-            ////    Console.Error.WriteLine($"Could not write to output {options.Output}. Reason: {ex.Message}");
-            ////    return;
-            ////}
-
-            // Should count the number of failures
             Console.WriteLine($"Output written to {options.Output}");
         }
 

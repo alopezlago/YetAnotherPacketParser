@@ -32,11 +32,8 @@ namespace YetAnotherPacketParser.File
                     {
                         IResult<string> result = await compile(filename, fileStream).ConfigureAwait(false);
                         return new CompileResult[] { new CompileResult(filename, result) };
-                        // return new SuccessResult<IEnumerable<Stream>>(new Stream[] { fileStream });
                     }
 
-                    // TODO: Are we going to have problems because ZipArchive was closed? Might need to copy to a
-                    // memory stream. Yes, we'd need to copy or run it here
                     IEnumerable<ZipArchiveEntry> docxEntries = archive.Entries
                         .Where(entry => entry.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase));
 
@@ -53,7 +50,7 @@ namespace YetAnotherPacketParser.File
                     if (largeEntry != null)
                     {
                         return CreateFailedCompileResultArray(
-                            largeEntry.Name, 
+                            largeEntry.Name,
                             $"Document {largeEntry.Name} is too large. Documents must be {MaximumStreamLengthMegabytes} MB or less.");
                     }
 
