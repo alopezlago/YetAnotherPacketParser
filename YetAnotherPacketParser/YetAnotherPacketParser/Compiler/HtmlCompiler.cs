@@ -27,19 +27,18 @@ namespace YetAnotherPacketParser.Compiler
 
         private static void WritePacket(PacketNode packet, StringBuilder builder)
         {
-            WriteTossups(packet.Tossups, builder);
+            foreach (TossupNode tossup in packet.Tossups)
+            {
+                WriteTossup(tossup, builder);
+            }
+
             if (packet.Bonuses != null)
             {
                 builder.AppendLine("<p></p>");
-                WriteBonuses(packet.Bonuses, builder);
-            }
-        }
-
-        private static void WriteTossups(TossupsNode tossups, StringBuilder builder)
-        {
-            foreach (TossupNode tossup in tossups.Tossups)
-            {
-                WriteTossup(tossup, builder);
+                foreach (BonusNode bonus in packet.Bonuses)
+                {
+                    WriteBonus(bonus, builder);
+                }
             }
         }
 
@@ -52,14 +51,6 @@ namespace YetAnotherPacketParser.Compiler
             builder.Append("</p>");
         }
 
-        private static void WriteBonuses(BonusesNode bonuses, StringBuilder builder)
-        {
-            foreach (BonusNode bonus in bonuses.Bonuses)
-            {
-                WriteBonus(bonus, builder);
-            }
-        }
-
         private static void WriteBonus(BonusNode bonus, StringBuilder builder)
         {
             builder.Append("<p>");
@@ -67,7 +58,7 @@ namespace YetAnotherPacketParser.Compiler
             builder.Append(". ");
             WriteFormattedText(bonus.Leadin, builder);
             builder.Append("<br>");
-            foreach (BonusPartNode bonusPart in bonus.Parts.Parts)
+            foreach (BonusPartNode bonusPart in bonus.Parts)
             {
                 WriteBonusPart(bonusPart, builder);
             }

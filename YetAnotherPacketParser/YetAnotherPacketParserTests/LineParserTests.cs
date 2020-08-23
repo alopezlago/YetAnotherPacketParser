@@ -41,10 +41,10 @@ namespace YetAnotherPacketParserTests
             Assert.IsTrue(packetResult.Success);
 
             PacketNode packet = packetResult.Value;
-            Assert.AreEqual(1, packet.Tossups.Tossups.Count(), "Unexpected number of tossups");
-            Assert.IsNull(packet.Bonuses?.Bonuses.Count(), "Bonuses should be null");
+            Assert.AreEqual(1, packet.Tossups.Count(), "Unexpected number of tossups");
+            Assert.IsNull(packet.Bonuses?.Count(), "Bonuses should be null");
 
-            TossupNode tossup = packet.Tossups.Tossups.First();
+            TossupNode tossup = packet.Tossups.First();
             Assert.AreEqual(number, tossup.Number, "Unexpected tossup number");
             Assert.AreEqual(questionText, tossup.Question.Question.UnformattedText, "Unexpected question");
             Assert.AreEqual(answer, tossup.Question.Answer.UnformattedText, "Unexpected answer");
@@ -79,20 +79,20 @@ namespace YetAnotherPacketParserTests
             Assert.IsTrue(packetResult.Success);
 
             PacketNode packet = packetResult.Value;
-            Assert.AreEqual(1, packet.Tossups.Tossups.Count(), "Unexpected number of tossups");
+            Assert.AreEqual(1, packet.Tossups.Count(), "Unexpected number of tossups");
             Assert.IsNotNull(packet.Bonuses, "Bonuses should not be null");
-            Assert.AreEqual(1, packet.Bonuses.Bonuses.Count(), "Unexpected number of bonuses");
+            Assert.AreEqual(1, packet.Bonuses.Count(), "Unexpected number of bonuses");
 
-            TossupNode tossup = packet.Tossups.Tossups.First();
+            TossupNode tossup = packet.Tossups.First();
             Assert.AreEqual(number, tossup.Number, "Unexpected tossup number");
             Assert.AreEqual(tossupQuestionText, tossup.Question.Question.UnformattedText, "Unexpected question");
             Assert.AreEqual(tossupAnswer, tossup.Question.Answer.UnformattedText, "Unexpected answer");
 
-            BonusNode bonus = packet.Bonuses.Bonuses.First();
+            BonusNode bonus = packet.Bonuses.First();
             Assert.AreEqual(number, bonus.Number, "Unexpected bonus number");
             for (int i = 0; i < bonusParts.Length; i++)
             {
-                BonusPartNode bonusPart = bonus.Parts.Parts.ElementAtOrDefault(i);
+                BonusPartNode bonusPart = bonus.Parts.ElementAtOrDefault(i);
                 Assert.IsNotNull(bonusPart, $"Bonus part {i} should exist");
                 Assert.AreEqual(
                     bonusParts[i],
@@ -126,11 +126,11 @@ namespace YetAnotherPacketParserTests
             Assert.IsTrue(packetResult.Success);
 
             PacketNode packet = packetResult.Value;
-            Assert.AreEqual(2, packet.Tossups.Tossups.Count(), "Unexpected number of tossups");
-            Assert.IsNull(packet.Bonuses?.Bonuses.Count(), "Bonuses should be null");
+            Assert.AreEqual(2, packet.Tossups.Count(), "Unexpected number of tossups");
+            Assert.IsNull(packet.Bonuses?.Count(), "Bonuses should be null");
 
             int index = 0;
-            foreach (TossupNode tossup in packet.Tossups.Tossups)
+            foreach (TossupNode tossup in packet.Tossups)
             {
                 Assert.AreEqual(index + 1, tossup.Number, "Unexpected tossup number");
                 Assert.AreEqual(questions[index], tossup.Question.Question.UnformattedText, "Unexpected question");
@@ -166,10 +166,10 @@ namespace YetAnotherPacketParserTests
             Assert.IsTrue(packetResult.Success);
 
             PacketNode packet = packetResult.Value;
-            Assert.AreEqual(1, packet.Tossups.Tossups.Count(), "Unexpected number of tossups");
-            Assert.IsNull(packet.Bonuses?.Bonuses.Count(), "Bonuses should be null");
+            Assert.AreEqual(1, packet.Tossups.Count(), "Unexpected number of tossups");
+            Assert.IsNull(packet.Bonuses?.Count(), "Bonuses should be null");
 
-            TossupNode tossup = packet.Tossups.Tossups.First();
+            TossupNode tossup = packet.Tossups.First();
             Assert.AreEqual(number, tossup.Number, "Unexpected tossup number");
             Assert.AreEqual(
                 questionText + remainingQuestionText,
@@ -210,14 +210,14 @@ namespace YetAnotherPacketParserTests
             Assert.IsTrue(packetResult.Success);
 
             PacketNode packet = packetResult.Value;
-            Assert.AreEqual(1, packet.Tossups.Tossups.Count(), "Unexpected number of tossups");
-            Assert.AreEqual(1, packet.Bonuses?.Bonuses.Count(), "Unexpected number of bonuses");
+            Assert.AreEqual(1, packet.Tossups.Count(), "Unexpected number of tossups");
+            Assert.AreEqual(1, packet.Bonuses?.Count(), "Unexpected number of bonuses");
 
-            BonusNode bonus = packet.Bonuses.Bonuses.First();
+            BonusNode bonus = packet.Bonuses.First();
             Assert.AreEqual(number, bonus.Number, "Unexpected bonus number");
-            Assert.AreEqual(2, bonus.Parts.Parts.Count(), "Unexpected number of parts");
+            Assert.AreEqual(2, bonus.Parts.Count(), "Unexpected number of parts");
 
-            BonusPartNode bonusPart = bonus.Parts.Parts.First();
+            BonusPartNode bonusPart = bonus.Parts.First();
             Assert.AreEqual(
                 questionText + remainingQuestionText,
                 bonusPart.Question.Question.UnformattedText,
