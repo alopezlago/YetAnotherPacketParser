@@ -30,21 +30,21 @@ namespace YetAnotherPacketParser.Compiler
         {
             Verify.IsNotNull(node, nameof(node));
 
-            TossupsNode sanitizedTossups = this.SanitizeTossups(node.Tossups);
-            BonusesNode? sanitizedBonuses = node.Bonuses == null ? null : this.SanitizeBonuses(node.Bonuses);
+            List<TossupNode> sanitizedTossups = this.SanitizeTossups(node.Tossups);
+            List<BonusNode>? sanitizedBonuses = node.Bonuses == null ? null : this.SanitizeBonuses(node.Bonuses);
 
             return new PacketNode(sanitizedTossups, sanitizedBonuses);
         }
 
-        private TossupsNode SanitizeTossups(TossupsNode node)
+        private List<TossupNode> SanitizeTossups(IEnumerable<TossupNode> tossups)
         {
-            List<TossupNode> sanitizedTossups = new List<TossupNode>(node.Tossups.Count());
-            foreach (TossupNode tossup in node.Tossups)
+            List<TossupNode> sanitizedTossups = new List<TossupNode>(tossups.Count());
+            foreach (TossupNode tossup in tossups)
             {
                 sanitizedTossups.Add(this.SanitizeTossup(tossup));
             }
 
-            return new TossupsNode(sanitizedTossups);
+            return sanitizedTossups;
         }
 
         private TossupNode SanitizeTossup(TossupNode node)
@@ -57,37 +57,30 @@ namespace YetAnotherPacketParser.Compiler
             return new TossupNode(node.Number, sanitizedQuestion, sanitizedEditorNotes);
         }
 
-        private BonusesNode SanitizeBonuses(BonusesNode node)
+        private List<BonusNode> SanitizeBonuses(IEnumerable<BonusNode> bonuses)
         {
-            List<BonusNode> sanitizedBonuses = new List<BonusNode>(node.Bonuses.Count());
-            foreach (BonusNode bonus in node.Bonuses)
+            List<BonusNode> sanitizedBonuses = new List<BonusNode>(bonuses.Count());
+            foreach (BonusNode bonus in bonuses)
             {
                 sanitizedBonuses.Add(this.SanitizeBonus(bonus));
             }
 
-            return new BonusesNode(sanitizedBonuses);
+            return sanitizedBonuses;
         }
 
         private BonusNode SanitizeBonus(BonusNode node)
         {
             FormattedText sanitizedLeadin = this.SanitizeFormattedTexts(node.Leadin);
-            BonusPartsNode sanitizedBonusParts = this.SanitizeBonusParts(node.Parts);
-            string? sanitizedEditorNotes = node.EditorsNote != null ?
-                this.Sanitizer.Sanitize(node.EditorsNote) :
-                null;
-
-            return new BonusNode(node.Number, sanitizedLeadin, sanitizedBonusParts, sanitizedEditorNotes);
-        }
-
-        private BonusPartsNode SanitizeBonusParts(BonusPartsNode node)
-        {
             List<BonusPartNode> sanitizedBonusParts = new List<BonusPartNode>();
             foreach (BonusPartNode bonusPart in node.Parts)
             {
                 sanitizedBonusParts.Add(this.SanitizeBonusPart(bonusPart));
             }
+            string? sanitizedEditorNotes = node.EditorsNote != null ?
+                this.Sanitizer.Sanitize(node.EditorsNote) :
+                null;
 
-            return new BonusPartsNode(sanitizedBonusParts);
+            return new BonusNode(node.Number, sanitizedLeadin, sanitizedBonusParts, sanitizedEditorNotes);
         }
 
         private BonusPartNode SanitizeBonusPart(BonusPartNode node)

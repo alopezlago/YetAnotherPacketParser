@@ -35,7 +35,7 @@ namespace YetAnotherPacketParser.Parser
                     return new FailureResult<PacketNode>("Cannot parse empty packet.");
                 }
 
-                IResult<TossupsNode> tossupsResult = this.ParseTossups(enumerator, out bool moreLinesExist);
+                IResult<List<TossupNode>> tossupsResult = this.ParseTossups(enumerator, out bool moreLinesExist);
                 if (!tossupsResult.Success)
                 {
                     return new FailureResult<PacketNode>(tossupsResult.ErrorMessage);
@@ -46,7 +46,7 @@ namespace YetAnotherPacketParser.Parser
                     return new SuccessResult<PacketNode>(new PacketNode(tossupsResult.Value, bonuses: null));
                 }
 
-                IResult<BonusesNode> bonusesResult = this.ParseBonuses(enumerator);
+                IResult<List<BonusNode>> bonusesResult = this.ParseBonuses(enumerator);
                 if (!bonusesResult.Success)
                 {
                     return new FailureResult<PacketNode>(bonusesResult.ErrorMessage);
@@ -125,7 +125,7 @@ namespace YetAnotherPacketParser.Parser
             return false;
         }
 
-        private IResult<TossupsNode> ParseTossups(LinesEnumerator lines, out bool moreLinesExist)
+        private IResult<List<TossupNode>> ParseTossups(LinesEnumerator lines, out bool moreLinesExist)
         {
             moreLinesExist = true;
             int currentQuestionNumber = -1;
@@ -142,7 +142,7 @@ namespace YetAnotherPacketParser.Parser
                 IResult<TossupNode> tossupResult = this.ParseTossup(lines, tossupNodes.Count + 1);
                 if (!tossupResult.Success)
                 {
-                    return new FailureResult<TossupsNode>(tossupResult.ErrorMessage);
+                    return new FailureResult<List<TossupNode>>(tossupResult.ErrorMessage);
                 }
 
                 tossupNodes.Add(tossupResult.Value);
@@ -150,15 +150,15 @@ namespace YetAnotherPacketParser.Parser
 
             if (tossupNodes.Count == 0)
             {
-                return new FailureResult<TossupsNode>(GetFailureMessage(
+                return new FailureResult<List<TossupNode>>(GetFailureMessage(
                     lines, "Failed to parse tossups. No tossups found."));
             }
 
             moreLinesExist = line != null;
-            return new SuccessResult<TossupsNode>(new TossupsNode(tossupNodes));
+            return new SuccessResult<List<TossupNode>>(tossupNodes);
         }
 
-        private IResult<BonusesNode> ParseBonuses(LinesEnumerator lines)
+        private IResult<List<BonusNode>> ParseBonuses(LinesEnumerator lines)
         {
             List<BonusNode> bonusNodes = new List<BonusNode>();
 
@@ -167,14 +167,14 @@ namespace YetAnotherPacketParser.Parser
                 IResult<BonusNode> bonusResult = this.ParseBonus(lines, bonusNodes.Count + 1);
                 if (!bonusResult.Success)
                 {
-                    return new FailureResult<BonusesNode>(bonusResult.ErrorMessage);
+                    return new FailureResult<List<BonusNode>>(bonusResult.ErrorMessage);
                 }
 
                 bonusNodes.Add(bonusResult.Value);
             }
 
             // It's okay if bonuses are empty, since bonuses may be optional
-            return new SuccessResult<BonusesNode>(new BonusesNode(bonusNodes));
+            return new SuccessResult<List<BonusNode>>(bonusNodes);
         }
 
         private IResult<TossupNode> ParseTossup(LinesEnumerator lines, int tossupNumber)
@@ -214,7 +214,7 @@ namespace YetAnotherPacketParser.Parser
                 return new FailureResult<BonusNode>(leadinResult.ErrorMessage);
             }
 
-            IResult<BonusPartsNode> bonusPartsResult = this.ParseBonusParts(lines);
+            IResult<List<BonusPartNode>> bonusPartsResult = this.ParseBonusParts(lines);
             if (!bonusPartsResult.Success)
             {
                 return new FailureResult<BonusNode>(bonusPartsResult.ErrorMessage);
@@ -224,7 +224,7 @@ namespace YetAnotherPacketParser.Parser
                 questionNumber, leadinResult.Value, bonusPartsResult.Value, null));
         }
 
-        private IResult<BonusPartsNode> ParseBonusParts(LinesEnumerator lines)
+        private IResult<List<BonusPartNode>> ParseBonusParts(LinesEnumerator lines)
         {
             List<BonusPartNode> parts = new List<BonusPartNode>();
             do
@@ -238,7 +238,7 @@ namespace YetAnotherPacketParser.Parser
                 IResult<BonusPartNode> bonusPartResult = this.ParseBonusPart(lines, parts.Count + 1);
                 if (!bonusPartResult.Success)
                 {
-                    return new FailureResult<BonusPartsNode>(bonusPartResult.ErrorMessage);
+                    return new FailureResult<List<BonusPartNode>>(bonusPartResult.ErrorMessage);
                 }
 
                 parts.Add(bonusPartResult.Value);
@@ -246,12 +246,12 @@ namespace YetAnotherPacketParser.Parser
 
             if (parts.Count == 0)
             {
-                return new FailureResult<BonusPartsNode>(GetFailureMessage(
+                return new FailureResult<List<BonusPartNode>>(GetFailureMessage(
                     lines,
                     "Failed to parse bonus parts. Couldn't find the part's value in the first block of text."));
             }
 
-            return new SuccessResult<BonusPartsNode>(new BonusPartsNode(parts));
+            return new SuccessResult<List<BonusPartNode>>(parts);
         }
 
         private IResult<BonusPartNode> ParseBonusPart(LinesEnumerator lines, int bonusPartNumber)
