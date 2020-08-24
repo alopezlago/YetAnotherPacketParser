@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Microsoft.AspNetCore.Http;
@@ -11,10 +13,6 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using YetAnotherPacketParser;
-using YetAnotherPacketParser.Ast;
-using YetAnotherPacketParser.Compiler;
-using YetAnotherPacketParser.Lexer;
-using YetAnotherPacketParser.Parser;
 
 namespace YetAnotherPacketParserAzureFunction
 {
@@ -22,6 +20,9 @@ namespace YetAnotherPacketParserAzureFunction
 
     public static class YetAnotherPacketParserParse
     {
+        private const int MaximumPackets = 30;
+        private const int MaximumPacketSizeInBytes = 1 * 1024 * 1024; // 1 MB
+
         [FunctionName("Test")]
         public static Task<IActionResult> Run2(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest request,
@@ -59,68 +60,58 @@ namespace YetAnotherPacketParserAzureFunction
                 return GetBadRequest("Body is required");
             }
 
-            GetOptions(
-                request, log, out int maximumLineCountBeforeNextStage, out bool prettyPrint, out string outputFormat);
+            IPacketCompilerOptions options = GetOptions(request, log);
 
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
+            IEnumerable<CompileResult> results = await PacketCompiler.CompilePacketsAsync(request.Body, options);
 
-            DocxLexer lexer = new DocxLexer();
-            IResult<IEnumerable<Line>> linesResult = await lexer.GetLines(request.Body);
-
-            long timeInMsLines = stopwatch.ElapsedMilliseconds;
-            stopwatch.Restart();
-
-            if (!linesResult.Success)
+            int resultsCount = results.Count();
+            if (resultsCount == 0)
             {
-                log.LogError($"Lex error: {linesResult.ErrorMessage}");
-                return GetBadRequest($"Lex error: {linesResult.ErrorMessage}");
+                return GetBadRequest("No packets found. Does the zip file have any .docx files?");
             }
-
-            LinesParserOptions parserOptions = new LinesParserOptions()
+            else if (resultsCount == 1)
             {
-                MaximumLineCountBeforeNextStage = maximumLineCountBeforeNextStage
-            };
-            LinesParser parser = new LinesParser(parserOptions);
-            IResult<PacketNode> packetNodeResult = parser.Parse(linesResult.Value);
-            if (!packetNodeResult.Success)
-            {
-                log.LogError($"Parse error: {packetNodeResult.ErrorMessage}");
-                return GetBadRequest($"Parse error: {packetNodeResult.ErrorMessage}");
-            }
-
-            long timeInMsParse = stopwatch.ElapsedMilliseconds;
-            stopwatch.Restart();
-
-            string result = string.Empty;
-            if ("json".Equals(outputFormat, StringComparison.CurrentCultureIgnoreCase))
-            {
-                JsonCompilerOptions compilerOptions = new JsonCompilerOptions()
+                CompileResult compileResult = results.First();
+                if (!compileResult.Result.Success)
                 {
-                    PrettyPrint = prettyPrint
-                };
-                JsonCompiler jsonCompiler = new JsonCompiler(compilerOptions);
-                result = await jsonCompiler.CompileAsync(packetNodeResult.Value).ConfigureAwait(false);
+                    return GetBadRequest(compileResult.Result.ErrorMessage);
+                }
+
+                return new OkObjectResult(compileResult.Result.Value);
             }
-            else if ("html".Equals(outputFormat, StringComparison.CurrentCultureIgnoreCase))
+
+            // We have a zip file. Return one.
+            // TODO: See if we can return a JSON result showing success, # successfully parsed packets, and the contents
+            bool outputFormatIsJson = options.OutputFormat == OutputFormat.Json;
+            IEnumerable<CompileResult> successResults = results.Where(result => result.Result.Success);
+            using (MemoryStream memoryStream = new MemoryStream())
+            using (ZipArchive archive = new ZipArchive(memoryStream, ZipArchiveMode.Create))
             {
-                HtmlCompiler htmlCompiler = new HtmlCompiler();
-                result = await htmlCompiler.CompileAsync(packetNodeResult.Value).ConfigureAwait(false);
+                foreach (CompileResult compileResult in successResults)
+                {
+                    string newFilename = outputFormatIsJson ?
+                        compileResult.Filename.Replace(".docx", ".json") :
+                        compileResult.Filename.Replace(".docx", ".html");
+                    ZipArchiveEntry entry = archive.CreateEntry(newFilename);
+
+                    // We can't do this asynchronously, because it complains about writing to the same ZipArchive stream
+                    using (StreamWriter writer = new StreamWriter(entry.Open()))
+                    {
+                        writer.Write(compileResult.Result.Value);
+                    }
+                }
+
+                log.LogInformation($"Succesfully parsed {successResults.Count()} out of {results.Count()} packets");
+                IEnumerable<CompileResult> failedResults = results
+                    .Where(result => !result.Result.Success)
+                    .OrderBy(result => result.Filename);
+                foreach (CompileResult compileResult in failedResults)
+                {
+                    log.LogWarning($"{compileResult.Filename} failed to compile.");
+                }
+
+                return new OkObjectResult(archive);
             }
-            else
-            {
-                return GetBadRequest($"Compile error: invalid format. Must be json or html");
-            }
-
-            stopwatch.Stop();
-            long timeInMsCompile = stopwatch.ElapsedMilliseconds;
-            long totalTimeMs = timeInMsLines + timeInMsParse + timeInMsCompile;
-
-            log.LogInformation(
-                $"Lex {timeInMsLines}ms, Parse {timeInMsParse}ms, Jsonify {timeInMsCompile}ms. Total: {totalTimeMs}ms " +
-                $"({timeInMsLines},{timeInMsParse},{timeInMsCompile}");
-
-            return new OkObjectResult(result);
         }
 
         private static BadRequestObjectResult GetBadRequest(string errorMessage)
@@ -130,13 +121,9 @@ namespace YetAnotherPacketParserAzureFunction
             return new BadRequestObjectResult(modelErrors);
         }
 
-        private static void GetOptions(
-            HttpRequest request,
-            ILogger log,
-            out int maximumLineCountBeforeNextStage,
-            out bool prettyPrint,
-            out string outputFormat)
+        private static IPacketCompilerOptions GetOptions(HttpRequest request, ILogger log)
         {
+            int maximumLineCountBeforeNextStage;
             if (TryGetStringValueFromQuery(request, "lineTolerance", out string stringValue) &&
                 int.TryParse(stringValue, out maximumLineCountBeforeNextStage) &&
                 maximumLineCountBeforeNextStage > 0)
@@ -149,6 +136,31 @@ namespace YetAnotherPacketParserAzureFunction
                 log.LogInformation("Using the default tolerance");
             }
 
+            OutputFormat outputFormat;
+            if (TryGetStringValueFromQuery(request, "format", out string outputFormatString))
+            {
+                log.LogInformation($"Parsed format: {outputFormatString}");
+                switch (outputFormatString.ToUpperInvariant())
+                {
+                    case "HTML":
+                        outputFormat = OutputFormat.Html;
+                        break;
+                    case "JSON":
+                        outputFormat = OutputFormat.Json;
+                        break;
+                    default:
+                        outputFormat = OutputFormat.Json;
+                        log.LogWarning($"Unrecognized format: {outputFormatString}. Defaulting to JSON");
+                        break;
+                }
+            }
+            else
+            {
+                outputFormat = OutputFormat.Json;
+                log.LogInformation("Using the default format");
+            }
+
+            bool prettyPrint;
             if (TryGetStringValueFromQuery(request, "prettyPrint", out stringValue) &&
                 bool.TryParse(stringValue, out prettyPrint))
             {
@@ -160,14 +172,58 @@ namespace YetAnotherPacketParserAzureFunction
                 log.LogInformation("Using the default pretty print setting");
             }
 
-            if (TryGetStringValueFromQuery(request, "format", out outputFormat))
+            Action<YetAnotherPacketParser.LogLevel, string> logMessage = (logLevel, message) => Log(log, logLevel, message);
+            switch (outputFormat)
             {
-                log.LogInformation($"Parsed format: {outputFormat}");
+                case OutputFormat.Html:
+                    return new HtmlPacketCompilerOptions()
+                    {
+                        StreamName = "Request",
+                        MaximumLineCountBeforeNextStage = maximumLineCountBeforeNextStage,
+                        MaximumPackets = MaximumPackets,
+                        MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
+                        Log = logMessage
+                    };
+                case OutputFormat.Json:
+                    // default to JSON
+                    return new JsonPacketCompilerOptions()
+                    {
+                        StreamName = "Request",
+                        PrettyPrint = prettyPrint,
+                        MaximumLineCountBeforeNextStage = maximumLineCountBeforeNextStage,
+                        MaximumPackets = MaximumPackets,
+                        MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
+                        Log = logMessage
+                    };
+                default:
+                    // Treat it as JSON and log an error
+                    log.LogError($"Unrecognized OutputFormat: {outputFormat}");
+                    return new JsonPacketCompilerOptions()
+                    {
+                        StreamName = "Request",
+                        PrettyPrint = prettyPrint,
+                        MaximumLineCountBeforeNextStage = maximumLineCountBeforeNextStage,
+                        MaximumPackets = MaximumPackets,
+                        MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
+                        Log = logMessage
+                    };
             }
-            else
+        }
+
+        private static void Log(ILogger logger, YetAnotherPacketParser.LogLevel logLevel, string message)
+        {
+            switch (logLevel)
             {
-                outputFormat = "json";
-                log.LogInformation("Using the default format");
+                case YetAnotherPacketParser.LogLevel.Informational:
+                    logger.LogInformation(message);
+                    break;
+                case YetAnotherPacketParser.LogLevel.Verbose:
+                    logger.LogDebug(message);
+                    break;
+                default:
+                    logger.LogWarning($"Logged with unknown log level: {logLevel}");
+                    logger.LogDebug(message);
+                    break;
             }
         }
 

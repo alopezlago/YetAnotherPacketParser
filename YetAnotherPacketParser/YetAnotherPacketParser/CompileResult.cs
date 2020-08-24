@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace YetAnotherPacketParser.File
+namespace YetAnotherPacketParser
 {
     public class CompileResult
     {

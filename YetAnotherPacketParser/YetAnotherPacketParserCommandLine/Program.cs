@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -8,11 +7,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommandLine;
 using YetAnotherPacketParser;
-using YetAnotherPacketParser.Ast;
-using YetAnotherPacketParser.Compiler;
-using YetAnotherPacketParser.File;
-using YetAnotherPacketParser.Lexer;
-using YetAnotherPacketParser.Parser;
 
 namespace YetAnotherPacketParserCommandLine
 {
@@ -32,6 +26,14 @@ namespace YetAnotherPacketParserCommandLine
             //     - LineParser (different failure modes, successes with different line modes)
             // - Check CALLISTO packet 11, since we have an unbroken <b> tag somewhere
             // - Add HTML as an input
+            // - Add verbose as a command-line option
+
+            // We should have one method exposed from the class library, like
+            // CompileResult = PacketParser.Compile(Stream, IPacketParserOptions)
+            // where the options are based on the output format (html/json)
+            // That way, we can pass back the string of the compiled text (or a stream?), along with any information
+            // we want (like statistics)
+            // The format is also the same (how we lex, parse, compile), it's just the logging and options that are different
 
             await Parser.Default.ParseArguments<CommandLineOptions>(args)
                 .WithParsedAsync(options => RunAsync(options)).ConfigureAwait(false);
@@ -39,22 +41,46 @@ namespace YetAnotherPacketParserCommandLine
 
         private static async Task RunAsync(CommandLineOptions options)
         {
-            if (!IsValidFormat(options))
-            {
-                Console.Error.WriteLine("Invalid format. Valid formats: json, html");
-                return;
-            }
-            else if (string.Equals(options.Input, options.Output))
+            if (string.Equals(options.Input, options.Output))
             {
                 Console.Error.WriteLine("Input and output files must be different");
                 return;
+            }
+            else if (!File.Exists(options.Input))
+            {
+                Console.Error.WriteLine($"File {options.Input} does not exist");
+                return;
+            }
+
+            IPacketCompilerOptions packetCompilerOptions;
+            switch (options.OutputFormat.Trim().ToUpper())
+            {
+                case "JSON":
+                    packetCompilerOptions = new JsonPacketCompilerOptions()
+                    {
+                        StreamName = options.Input,
+                        MaximumLineCountBeforeNextStage = options.MaximumLineCountBeforeNextStage,
+                        PrettyPrint = options.PrettyPrint,
+                        Log = Log
+                    };
+                    break;
+                case "HTML":
+                    packetCompilerOptions = new HtmlPacketCompilerOptions()
+                    {
+                        StreamName = options.Input,
+                        MaximumLineCountBeforeNextStage = options.MaximumLineCountBeforeNextStage,
+                        Log = Log
+                    };
+                    break;
+                default:
+                    Console.Error.WriteLine("Invalid format. Valid formats: json, html");
+                    return;
             }
 
             IEnumerable<CompileResult> outputResults;
             using (FileStream fileStream = new FileStream(options.Input, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                outputResults = await StreamTranslator.GetCompiledOutputs(
-                    options.Input, fileStream, (name, document) => CompileDocument(name, document, options));
+                outputResults = await PacketCompiler.CompilePacketsAsync(fileStream, packetCompilerOptions);
             }
 
             int resultsCount = outputResults.Count();
@@ -81,10 +107,14 @@ namespace YetAnotherPacketParserCommandLine
             }
             else
             {
-                // Write zip file. See if we need to delete old ones
-                // Yes it does, so TODO TODO That
-                bool outputFormatIsJson = options.OutputFormat.ToUpper(CultureInfo.CurrentCulture) == "JSON";
+                bool outputFormatIsJson = packetCompilerOptions.OutputFormat == OutputFormat.Json;
                 IEnumerable<CompileResult> successResults = outputResults.Where(result => result.Result.Success);
+
+                if (File.Exists(options.Output))
+                {
+                    File.Delete(options.Output);
+                }
+
                 using (ZipArchive outputArchive = ZipFile.Open(options.Output, ZipArchiveMode.Create))
                 {
                     foreach (CompileResult compileResult in successResults)
@@ -116,88 +146,10 @@ namespace YetAnotherPacketParserCommandLine
             Console.WriteLine($"Output written to {options.Output}");
         }
 
-        private static async Task<IResult<string>> CompileDocument(
-            string name, Stream document, CommandLineOptions options)
+        private static void Log(LogLevel logLevel, string message)
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            DocxLexer lexer = new DocxLexer();
-            IResult<IEnumerable<Line>> linesResult = await lexer.GetLines(document);
-
-            long timeInMsLines = stopwatch.ElapsedMilliseconds;
-            stopwatch.Restart();
-
-            if (!linesResult.Success)
-            {
-                return new FailureResult<string>($"{name}: Lexing error. {linesResult.ErrorMessage}");
-            }
-
-            Console.WriteLine($"{name}: Lexing complete.");
-
-            LinesParserOptions parserOptions = new LinesParserOptions()
-            {
-                MaximumLineCountBeforeNextStage = options.MaximumLineCountBeforeNextStage
-            };
-            LinesParser parser = new LinesParser(parserOptions);
-            IResult<PacketNode> packetNodeResult = parser.Parse(linesResult.Value);
-
-            long timeInMsParse = stopwatch.ElapsedMilliseconds;
-            stopwatch.Restart();
-
-            if (!packetNodeResult.Success)
-            {
-                return new FailureResult<string>($"{name}: Parse error: " + packetNodeResult.ErrorMessage);
-            }
-
-            PacketNode packetNode = packetNodeResult.Value;
-            int tossupsCount = packetNode.Tossups.Count();
-            int bonusesCount = packetNode.Bonuses?.Count() ?? 0;
-            Console.WriteLine($"{name}: Parsing complete. {tossupsCount} tossup(s), {bonusesCount} bonus(es).");
-
-            string outputContents = await CompilePacketToOutput(packetNode, options).ConfigureAwait(false);
-
-            stopwatch.Stop();
-            long timeInMsCompile = stopwatch.ElapsedMilliseconds;
-
-            Console.WriteLine($"{name}: Compilation complete.");
-
-            if (string.IsNullOrEmpty(outputContents))
-            {
-                return new FailureResult<string>($"{name}: No output to write. Did you choose a correct format (json, html)?");
-            }
-
-            long totalTimeMs = timeInMsLines + timeInMsParse + timeInMsCompile;
-            Console.WriteLine(
-                $"{name}: Lex {timeInMsLines}ms, Parse {timeInMsParse}ms, Compile {timeInMsCompile}ms. Total: {totalTimeMs}ms ");
-
-            return new SuccessResult<string>(outputContents);
-        }
-
-        private static async Task<string> CompilePacketToOutput(PacketNode packetNode, CommandLineOptions options)
-        {
-            string format = options.OutputFormat.ToUpper(CultureInfo.CurrentCulture);
-            switch (format)
-            {
-                case "JSON":
-                    JsonCompilerOptions compilerOptions = new JsonCompilerOptions()
-                    {
-                        PrettyPrint = options.PrettyPrint
-                    };
-                    JsonCompiler compiler = new JsonCompiler(compilerOptions);
-                    return await compiler.CompileAsync(packetNode).ConfigureAwait(false);
-                case "HTML":
-                    HtmlCompiler htmlCompiler = new HtmlCompiler();
-                    return await htmlCompiler.CompileAsync(packetNode).ConfigureAwait(false);
-                default:
-                    return string.Empty;
-            }
-        }
-
-        private static bool IsValidFormat(CommandLineOptions options)
-        {
-            return !"json".Equals(options.OutputFormat, StringComparison.CurrentCultureIgnoreCase) ||
-                !"html".Equals(options.OutputFormat, StringComparison.CurrentCultureIgnoreCase);
+            // TODO: Have verbose command line option
+            Console.WriteLine(message);
         }
     }
 }
