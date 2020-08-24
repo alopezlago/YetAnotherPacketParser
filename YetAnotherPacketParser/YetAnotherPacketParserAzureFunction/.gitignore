@@ -5,6 +5,7 @@
 local.settings.json
 appInsights1.arm.json
 profile.arm.json
+YetAnotherPacketParserAzureFunction - Zip Deploy1/*
 
 # User-specific files
 *.suo
