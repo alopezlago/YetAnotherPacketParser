@@ -2,7 +2,7 @@
 
 namespace YetAnotherPacketParser
 {
-    public class HtmlPacketCompilerOptions : IPacketCompilerOptions
+    public class HtmlPacketCompilerOptions : IPacketConverterOptions
     {
         public HtmlPacketCompilerOptions()
         {

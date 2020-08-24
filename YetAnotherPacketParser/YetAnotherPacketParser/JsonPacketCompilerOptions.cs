@@ -2,7 +2,7 @@
 
 namespace YetAnotherPacketParser
 {
-    public class JsonPacketCompilerOptions : IPacketCompilerOptions
+    public class JsonPacketCompilerOptions : IPacketConverterOptions
     {
         public JsonPacketCompilerOptions()
         {

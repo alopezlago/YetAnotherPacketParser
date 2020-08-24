@@ -2,9 +2,9 @@
 
 namespace YetAnotherPacketParser
 {
-    public class CompileResult
+    public class ConvertResult
     {
-        public CompileResult(string filename, IResult<string> result)
+        public ConvertResult(string filename, IResult<string> result)
         {
             this.Result = result ?? throw new ArgumentNullException(nameof(result));
             this.Filename = filename ?? throw new ArgumentNullException(nameof(filename));

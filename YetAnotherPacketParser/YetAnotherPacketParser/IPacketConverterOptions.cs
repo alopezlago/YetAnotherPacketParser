@@ -2,7 +2,7 @@
 
 namespace YetAnotherPacketParser
 {
-    public interface IPacketCompilerOptions
+    public interface IPacketConverterOptions
     {
         public string StreamName { get; }
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -28,13 +27,6 @@ namespace YetAnotherPacketParserCommandLine
             // - Add HTML as an input
             // - Add verbose as a command-line option
 
-            // We should have one method exposed from the class library, like
-            // CompileResult = PacketParser.Compile(Stream, IPacketParserOptions)
-            // where the options are based on the output format (html/json)
-            // That way, we can pass back the string of the compiled text (or a stream?), along with any information
-            // we want (like statistics)
-            // The format is also the same (how we lex, parse, compile), it's just the logging and options that are different
-
             await Parser.Default.ParseArguments<CommandLineOptions>(args)
                 .WithParsedAsync(options => RunAsync(options)).ConfigureAwait(false);
         }
@@ -52,7 +44,7 @@ namespace YetAnotherPacketParserCommandLine
                 return;
             }
 
-            IPacketCompilerOptions packetCompilerOptions;
+            IPacketConverterOptions packetCompilerOptions;
             switch (options.OutputFormat.Trim().ToUpper())
             {
                 case "JSON":
@@ -77,10 +69,10 @@ namespace YetAnotherPacketParserCommandLine
                     return;
             }
 
-            IEnumerable<CompileResult> outputResults;
+            IEnumerable<ConvertResult> outputResults;
             using (FileStream fileStream = new FileStream(options.Input, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                outputResults = await PacketCompiler.CompilePacketsAsync(fileStream, packetCompilerOptions);
+                outputResults = await PacketConverter.ConvertPacketsAsync(fileStream, packetCompilerOptions);
             }
 
             int resultsCount = outputResults.Count();
@@ -91,7 +83,7 @@ namespace YetAnotherPacketParserCommandLine
             }
             else if (resultsCount == 1)
             {
-                CompileResult compileResult = outputResults.First();
+                ConvertResult compileResult = outputResults.First();
                 if (!compileResult.Result.Success)
                 {
                     Console.Error.WriteLine(compileResult.Result.ErrorMessage);
@@ -102,13 +94,11 @@ namespace YetAnotherPacketParserCommandLine
                 {
                     File.WriteAllText(options.Output, compileResult.Result.Value);
                 }
-
-                Console.WriteLine($"Output written to {options.Output}");
             }
             else
             {
                 bool outputFormatIsJson = packetCompilerOptions.OutputFormat == OutputFormat.Json;
-                IEnumerable<CompileResult> successResults = outputResults.Where(result => result.Result.Success);
+                IEnumerable<ConvertResult> successResults = outputResults.Where(result => result.Result.Success);
 
                 if (File.Exists(options.Output))
                 {
@@ -117,7 +107,7 @@ namespace YetAnotherPacketParserCommandLine
 
                 using (ZipArchive outputArchive = ZipFile.Open(options.Output, ZipArchiveMode.Create))
                 {
-                    foreach (CompileResult compileResult in successResults)
+                    foreach (ConvertResult compileResult in successResults)
                     {
                         string newFilename = outputFormatIsJson ?
                             compileResult.Filename.Replace(".docx", ".json") :
@@ -134,10 +124,10 @@ namespace YetAnotherPacketParserCommandLine
 
                 Console.WriteLine();
                 Console.WriteLine($"Succesfully parsed {successResults.Count()} out of {outputResults.Count()} packets");
-                IEnumerable<CompileResult> failedResults = outputResults
+                IEnumerable<ConvertResult> failedResults = outputResults
                     .Where(result => !result.Result.Success)
                     .OrderBy(result => result.Filename);
-                foreach (CompileResult compileResult in failedResults)
+                foreach (ConvertResult compileResult in failedResults)
                 {
                     Console.Error.WriteLine($"{compileResult.Filename} failed to compile. Error: {compileResult.Result.ErrorMessage}");
                 }

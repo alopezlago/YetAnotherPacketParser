@@ -23,6 +23,7 @@ namespace YetAnotherPacketParserAzureFunction
         private const int MaximumPackets = 30;
         private const int MaximumPacketSizeInBytes = 1 * 1024 * 1024; // 1 MB
 
+        // This is just a test function to make sure the function website and API routing is working
         [FunctionName("Test")]
         public static Task<IActionResult> Run2(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest request,
@@ -60,9 +61,9 @@ namespace YetAnotherPacketParserAzureFunction
                 return GetBadRequest("Body is required");
             }
 
-            IPacketCompilerOptions options = GetOptions(request, log);
+            IPacketConverterOptions options = GetOptions(request, log);
 
-            IEnumerable<CompileResult> results = await PacketCompiler.CompilePacketsAsync(request.Body, options);
+            IEnumerable<ConvertResult> results = await PacketConverter.ConvertPacketsAsync(request.Body, options);
 
             int resultsCount = results.Count();
             if (resultsCount == 0)
@@ -71,46 +72,52 @@ namespace YetAnotherPacketParserAzureFunction
             }
             else if (resultsCount == 1)
             {
-                CompileResult compileResult = results.First();
+                ConvertResult compileResult = results.First();
                 if (!compileResult.Result.Success)
                 {
                     return GetBadRequest(compileResult.Result.ErrorMessage);
                 }
 
+                // TODO: Should we handle the 1-packet zip file case by returning a zip?
                 return new OkObjectResult(compileResult.Result.Value);
             }
 
             // We have a zip file. Return one.
             // TODO: See if we can return a JSON result showing success, # successfully parsed packets, and the contents
             bool outputFormatIsJson = options.OutputFormat == OutputFormat.Json;
-            IEnumerable<CompileResult> successResults = results.Where(result => result.Result.Success);
+            IEnumerable<ConvertResult> successResults = results.Where(result => result.Result.Success);
             using (MemoryStream memoryStream = new MemoryStream())
-            using (ZipArchive archive = new ZipArchive(memoryStream, ZipArchiveMode.Create))
             {
-                foreach (CompileResult compileResult in successResults)
+                using (ZipArchive archive = new ZipArchive(memoryStream, ZipArchiveMode.Create))
                 {
-                    string newFilename = outputFormatIsJson ?
-                        compileResult.Filename.Replace(".docx", ".json") :
-                        compileResult.Filename.Replace(".docx", ".html");
-                    ZipArchiveEntry entry = archive.CreateEntry(newFilename);
-
-                    // We can't do this asynchronously, because it complains about writing to the same ZipArchive stream
-                    using (StreamWriter writer = new StreamWriter(entry.Open()))
+                    foreach (ConvertResult compileResult in successResults)
                     {
-                        writer.Write(compileResult.Result.Value);
+                        string newFilename = outputFormatIsJson ?
+                            compileResult.Filename.Replace(".docx", ".json") :
+                            compileResult.Filename.Replace(".docx", ".html");
+                        ZipArchiveEntry entry = archive.CreateEntry(newFilename);
+
+                        // We can't do this asynchronously, because it complains about writing to the same ZipArchive stream
+                        using (StreamWriter writer = new StreamWriter(entry.Open()))
+                        {
+                            writer.Write(compileResult.Result.Value);
+                        }
+                    }
+
+                    log.LogInformation($"Succesfully parsed {successResults.Count()} out of {results.Count()} packets");
+                    IEnumerable<ConvertResult> failedResults = results
+                        .Where(result => !result.Result.Success)
+                        .OrderBy(result => result.Filename);
+                    foreach (ConvertResult compileResult in failedResults)
+                    {
+                        log.LogWarning($"{compileResult.Filename} failed to compile.");
                     }
                 }
 
-                log.LogInformation($"Succesfully parsed {successResults.Count()} out of {results.Count()} packets");
-                IEnumerable<CompileResult> failedResults = results
-                    .Where(result => !result.Result.Success)
-                    .OrderBy(result => result.Filename);
-                foreach (CompileResult compileResult in failedResults)
-                {
-                    log.LogWarning($"{compileResult.Filename} failed to compile.");
-                }
+                await memoryStream.FlushAsync();
+                byte[] zippedBytes = memoryStream.ToArray();
 
-                return new OkObjectResult(archive);
+                return new OkObjectResult(zippedBytes);
             }
         }
 
@@ -121,7 +128,7 @@ namespace YetAnotherPacketParserAzureFunction
             return new BadRequestObjectResult(modelErrors);
         }
 
-        private static IPacketCompilerOptions GetOptions(HttpRequest request, ILogger log)
+        private static IPacketConverterOptions GetOptions(HttpRequest request, ILogger log)
         {
             int maximumLineCountBeforeNextStage;
             if (TryGetStringValueFromQuery(request, "lineTolerance", out string stringValue) &&

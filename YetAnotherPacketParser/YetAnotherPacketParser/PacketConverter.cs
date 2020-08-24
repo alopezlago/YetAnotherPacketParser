@@ -12,14 +12,21 @@ using YetAnotherPacketParser.Parser;
 
 namespace YetAnotherPacketParser
 {
-    public static class PacketCompiler
+    public static class PacketConverter
     {
-        public static async Task<IEnumerable<CompileResult>> CompilePacketsAsync(
-            Stream stream, IPacketCompilerOptions options)
+        /// <summary>
+        /// Converts the file encoded in the stream to a packet in the output format specified in the options
+        /// </summary>
+        /// <param name="stream">Stream representing the packet. This can either represent a .docx Microsoft Word file
+        /// or a zip file containing .docx files.</param>
+        /// <param name="options">Options for converting the packets, such as the output format and the maximum size
+        /// of packets.</param>
+        /// <returns>An enumerable of the converted results. If conversion succeeded, the element will have a string
+        /// of the packet in the requested format. If conversion failed, the element will have an error message explaining
+        /// the cause of the failure.</returns>
+        public static async Task<IEnumerable<ConvertResult>> ConvertPacketsAsync(
+            Stream stream, IPacketConverterOptions options)
         {
-            // Determine if it's a docx or zip file
-            // pick the right compiler
-
             Verify.IsNotNull(options, nameof(options));
             Verify.IsNotNull(stream, nameof(stream));
 
@@ -32,15 +39,15 @@ namespace YetAnotherPacketParser
                     if (hasWordDocumentBody && !archive.Entries
                         .Any(entry => entry.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)))
                     {
-                        CompileResult result = await CompilePacketAsync(options.StreamName, stream, options)
+                        ConvertResult result = await CompilePacketAsync(options.StreamName, stream, options)
                             .ConfigureAwait(false);
-                        return new CompileResult[] { result };
+                        return new ConvertResult[] { result };
                     }
 
                     IEnumerable<ZipArchiveEntry> docxEntries = archive.Entries
                         .Where(entry => entry.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase));
 
-                    // If these steps are too slow, we should combine them in one loop through the file
+                    // TODO: If these checks are too slow, we should combine them in one loop through the file
                     if (docxEntries.Count() > options.MaximumPackets)
                     {
                         return CreateFailedCompileResultArray(
@@ -55,10 +62,10 @@ namespace YetAnotherPacketParser
                         double maxLengthInMB = options.MaximumPacketSizeInBytes / 1024.0 / 1024;
                         return CreateFailedCompileResultArray(
                             largeEntry.Name,
-                            $"Document {largeEntry.Name} is too large. Documents must be {maxLengthInMB} MB or less.");
+                            $"Document \"{largeEntry.Name}\" is too large. Documents must be {maxLengthInMB} MB or less.");
                     }
 
-                    CompileResult[] compileResults = await Task.WhenAll(
+                    ConvertResult[] compileResults = await Task.WhenAll(
                         docxEntries.Select(entry => CompilePacketAsync(entry.Name, entry.Open(), options)))
                         .ConfigureAwait(false);
 
@@ -75,19 +82,32 @@ namespace YetAnotherPacketParser
             }
         }
 
-        private static CompileResult[] CreateFailedCompileResultArray(string streamName, string message)
+        private static ConvertResult[] CreateFailedCompileResultArray(string streamName, string message)
         {
-            return new CompileResult[] { CreateFailedCompileResult(streamName, message) };
+            return new ConvertResult[] { CreateFailedCompileResult(streamName, message) };
         }
 
-        private static CompileResult CreateFailedCompileResult(string streamName, string message)
+        private static ConvertResult CreateFailedCompileResult(string streamName, string message)
         {
-            return new CompileResult(streamName, new FailureResult<string>(message));
+            return new ConvertResult(streamName, new FailureResult<string>(message));
         }
 
-        private static async Task<CompileResult> CompilePacketAsync(
-            string packetName, Stream packetStream, IPacketCompilerOptions options)
+        private static async Task<ConvertResult> CompilePacketAsync(
+            string packetName, Stream packetStream, IPacketConverterOptions options)
         {
+            // Compilers generally have four stages
+            // 1. Lex/tokenize: get the tokens from the document. In the case of quiz bowl packets, tokens are the
+            //    lines of text.
+            //    - DocxLexer does this for us
+            // 2. Parse: convert the tokens into an abstract sytnax tree. In this case, the AST represents a quiz bowl
+            //    packet, with tossups and bonuses
+            //    - LinesParser does this for us
+            // 3. Optimize/transformations: Perform optimizations/transformations on the AST. There generally aren't
+            //    many transformations needed for packets. One example would be a HTML sanitizer for HTML/JSON packets.
+            // 4. Compile: translate the AST into the desired output.
+            //    - Because there are very few transformations, these are currently done in Compile, though in the
+            //      future we might want to accept a list of transformations from options, and have those transformers
+            //      implement an IVisitor interface.
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -161,7 +181,7 @@ namespace YetAnotherPacketParser
                 LogLevel.Verbose,
                 $"{packetName}: Lex {timeInMsLines}ms, Parse {timeInMsParse}ms, Compile {timeInMsCompile}ms. Total: {totalTimeMs}ms ");
 
-            return new CompileResult(packetName, new SuccessResult<string>(outputContents));
+            return new ConvertResult(packetName, new SuccessResult<string>(outputContents));
         }
     }
 }
