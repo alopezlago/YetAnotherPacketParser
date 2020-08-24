@@ -342,3 +342,4 @@ healthchecksdb
 # AppInsights settings for Azure Functions
 profile.arm.json
 appInsights1.arm.json
+YetAnotherPacketParserAzureFunction - Zip Deploy1/*

@@ -101,7 +101,7 @@ namespace YetAnotherPacketParser.Compiler
             {
                 if (previousBolded ^ segment.Bolded)
                 {
-                    builder.Append(segment.Underlined ? "<b>" : "</b>");
+                    builder.Append(segment.Bolded ? "<b>" : "</b>");
                     previousBolded = segment.Bolded;
                 }
 
