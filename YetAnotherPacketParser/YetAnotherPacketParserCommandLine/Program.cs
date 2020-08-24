@@ -23,7 +23,6 @@ namespace YetAnotherPacketParserCommandLine
             //   change in parsing logic, where we do a lookahead and find answers, or go back after finding an answer
             // - Add tests for
             //     - LineParser (different failure modes, successes with different line modes)
-            // - Check CALLISTO packet 11, since we have an unbroken <b> tag somewhere
             // - Add HTML as an input
             // - Add verbose as a command-line option
 
