@@ -11,8 +11,6 @@ using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace YetAnotherPacketParser.Lexer
 {
-    // An unconventional lexer: grab information like question number and text from newlines. Since <w:br> is interpretted
-    // as a newline but not as a paragraph, we have to enumerate through all the paragraphs to find them.
     public class DocxLexer : ILexer
     {
         // No part should be greater than 2 million characters
@@ -25,45 +23,16 @@ namespace YetAnotherPacketParser.Lexer
         // Include spaces after the start tag so we get all of the spaces in a match, and we can avoid having to trim
         // them manually.
         private static readonly Regex AnswerRegEx = new Regex("^\\s*ANS(WER)?\\s*(:|\\.)\\s*", RegexOptions.IgnoreCase);
-        private static readonly Regex QuestionDigitRegEx = new Regex("^\\s*(\\d+|tb|tie(breaker)?)\\s*\\.\\s*", RegexOptions.IgnoreCase);
+        private static readonly Regex QuestionDigitRegEx = new Regex(
+            "^\\s*(\\d+|tb|tie(breaker)?)\\s*\\.\\s*", RegexOptions.IgnoreCase);
         private static readonly Regex BonusPartValueRegex = new Regex("^\\s*\\[\\s*(\\d)+\\s*\\]\\s*");
 
-        public Task<IResult<IEnumerable<Line>>> GetLines(string filename)
-        {
-            Verify.IsNotNull(filename, nameof(filename));
-
-            try
-            {
-                using (WordprocessingDocument document = WordprocessingDocument.Open(
-                    filename, isEditable: false, openSettings: DocOpenSettings))
-                {
-                    Body body = document.MainDocumentPart.Document.Body;
-                    IResult<IEnumerable<Line>> lines = new SuccessResult<IEnumerable<Line>>(GetLinesFromBody(body));
-                    return Task.FromResult(lines);
-                }
-            }
-            catch (ArgumentNullException ex)
-            {
-                Console.Error.WriteLine(ex);
-                IResult<IEnumerable<Line>> lines = new FailureResult<IEnumerable<Line>>("Unexpected null value found");
-                return Task.FromResult(lines);
-            }
-            catch (OpenXmlPackageException ex)
-            {
-                Console.Error.WriteLine(ex);
-                IResult<IEnumerable<Line>> lines = new FailureResult<IEnumerable<Line>>(
-                    "Unable to open the .docx file: " + ex.Message);
-                return Task.FromResult(lines);
-            }
-            catch (FileFormatException ex)
-            {
-                Console.Error.WriteLine(ex);
-                IResult<IEnumerable<Line>> lines = new FailureResult<IEnumerable<Line>>(
-                    "Unable to open the .docx file: " + ex.Message);
-                return Task.FromResult(lines);
-            }
-        }
-
+        /// <summary>
+        /// Gets the lines from the .docx file, with metadata indicating what type of line it is.
+        /// </summary>
+        /// <param name="stream">Stream whose contents are a .docx Microsoft Word file</param>
+        /// <returns>If we were unable to open the stream, then the result is a FailureResult. Otherwise, it is a
+        /// SuccessResult with a collection of lines from the document.</returns>
         public Task<IResult<IEnumerable<Line>>> GetLines(Stream stream)
         {
             Verify.IsNotNull(stream, nameof(stream));
@@ -102,6 +71,8 @@ namespace YetAnotherPacketParser.Lexer
 
         private static IEnumerable<Line> GetLinesFromBody(Body body)
         {
+            // Get the list of lines with OpenXML SDK specific classes, then convert those to format-independent Line
+            // instances.
             List<TextBlockLine> textBlockLines = GetTextBlockLines(body);
             List<Line> lines = GetLinesFromTextBlockLines(textBlockLines);
             return lines;
@@ -152,7 +123,7 @@ namespace YetAnotherPacketParser.Lexer
                     }
                 }
 
-                // For accurate line numbers, we should include blank lines
+                // For accurate line numbers, we must include blank lines
                 textBlockLines.Add(new TextBlockLine(textBlocks));
                 textBlocks = new List<TextBlock>();
             }
@@ -163,8 +134,8 @@ namespace YetAnotherPacketParser.Lexer
         // TODO: See if there's a way to break up this method (+100 lines)
         private static List<Line> GetLinesFromTextBlockLines(IEnumerable<TextBlockLine> textBlockLines)
         {
-            // Potential issue: if the numbering doesn't start at 1, then we're off. We could look up the numbering
-            // index, but question 0s are rare
+            // TODO: Potential issue: if the numbering doesn't start at 1, then we're off. We could look up the
+            // numbering index in the docx file, but question 0s are rare
             int? lastNumberingId = null;
             int currentQuestionNumber = 1;
 
@@ -223,17 +194,13 @@ namespace YetAnotherPacketParser.Lexer
                     currentSegment.Clear();
                 }
 
-                // If the numbering Ids have changed, we're no longer in the same list. Reset it.
+                // If the numbering Ids have changed, we're no longer in the same numbered list. Reset the number we're
+                // counting.
                 if (currentNumberingId != null && lastNumberingId != currentNumberingId)
                 {
                     lastNumberingId = currentNumberingId;
                     currentQuestionNumber = 1;
                 }
-
-                // TODO: This could be done in a different stage. Lexing shouldn't figure out if it's an answer line
-                // yet, nor what the question number is. This is something that should be refactored. The one problem
-                // is that we need to get the numbering ID information at this stage, and if we're doing these checks,
-                // we might as well do the other ones.
 
                 // Check the first block to see if it's an answer or digit block
                 // Also, don't add empty lines
@@ -275,6 +242,8 @@ namespace YetAnotherPacketParser.Lexer
                         formattedText = formattedText.Substring(matchValue.Length);
                     }
 
+                    // docx will use NumberingId instead of including the digit in the document. Therefore, we have to
+                    // set a question number in lines that have a numbering ID.
                     if (questionNumber == null && currentNumberingId != null)
                     {
                         questionNumber = currentQuestionNumber;
@@ -347,6 +316,10 @@ namespace YetAnotherPacketParser.Lexer
             return true;
         }
 
+        /// <summary>
+        /// An intermediate node that stores OpenXML-specific fields like NumberingId before we can convert them to
+        /// proper numbers.
+        /// </summary>
         private class TextBlock
         {
             public TextBlock(string text, NumberingId? numberingId, RunProperties? properties)

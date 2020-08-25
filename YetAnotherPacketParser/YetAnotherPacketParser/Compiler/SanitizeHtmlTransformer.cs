@@ -26,12 +26,17 @@ namespace YetAnotherPacketParser.Compiler
 
         private Dictionary<string, string> CachedShortSegments { get; }
 
-        public PacketNode Sanitize(PacketNode node)
+        /// <summary>
+        /// Removes all HTML tags and styles from the text fields in a packet.
+        /// </summary>
+        /// <param name="packet">The packet to sanitize</param>
+        /// <returns>A new packet node, with all the HTML sanitized from the packet.</returns>
+        public PacketNode Sanitize(PacketNode packet)
         {
-            Verify.IsNotNull(node, nameof(node));
+            Verify.IsNotNull(packet, nameof(packet));
 
-            List<TossupNode> sanitizedTossups = this.SanitizeTossups(node.Tossups);
-            List<BonusNode>? sanitizedBonuses = node.Bonuses == null ? null : this.SanitizeBonuses(node.Bonuses);
+            List<TossupNode> sanitizedTossups = this.SanitizeTossups(packet.Tossups);
+            List<BonusNode>? sanitizedBonuses = packet.Bonuses == null ? null : this.SanitizeBonuses(packet.Bonuses);
 
             return new PacketNode(sanitizedTossups, sanitizedBonuses);
         }
