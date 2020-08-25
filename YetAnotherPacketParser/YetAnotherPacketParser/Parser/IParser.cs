@@ -6,6 +6,6 @@ namespace YetAnotherPacketParser.Parser
 {
     public interface IParser
     {
-        IResult<PacketNode> Parse(IEnumerable<Line> lines);
+        IResult<PacketNode> Parse(IEnumerable<ILine> lines);
     }
 }

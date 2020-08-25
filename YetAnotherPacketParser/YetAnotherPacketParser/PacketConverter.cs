@@ -112,7 +112,7 @@ namespace YetAnotherPacketParser
             stopwatch.Start();
 
             DocxLexer lexer = new DocxLexer();
-            IResult<IEnumerable<Line>> linesResult = await lexer.GetLines(packetStream).ConfigureAwait(false);
+            IResult<IEnumerable<ILine>> linesResult = await lexer.GetLines(packetStream).ConfigureAwait(false);
 
             long timeInMsLines = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();

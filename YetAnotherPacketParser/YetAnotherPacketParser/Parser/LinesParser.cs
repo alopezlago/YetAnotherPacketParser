@@ -24,7 +24,7 @@ namespace YetAnotherPacketParser.Parser
 
         public LinesParserOptions Options { get; }
 
-        public IResult<PacketNode> Parse(IEnumerable<Line> lines)
+        public IResult<PacketNode> Parse(IEnumerable<ILine> lines)
         {
             Verify.IsNotNull(lines, nameof(lines));
 
@@ -56,14 +56,14 @@ namespace YetAnotherPacketParser.Parser
             }
         }
 
-        private static bool IsEndOfLeadin(Line line)
+        private static bool IsEndOfLeadin(ILine line)
         {
-            return line.PartValue.HasValue;
+            return line.Type == LineType.BonusPart;
         }
 
-        private static bool IsEndOfQuestion(Line line)
+        private static bool IsEndOfQuestion(ILine line)
         {
-            return line.IsAnswerLine;
+            return line.Type == LineType.Answer;
         }
 
         private static string GetFailureMessage(LinesEnumerator lines, string message)
@@ -95,7 +95,7 @@ namespace YetAnotherPacketParser.Parser
             return $"{message} (Line #{lines.LineNumber}{snippetMessage})";
         }
 
-        private static bool TryGetNextQuestionLine(LinesEnumerator lines, out Line? line)
+        private static bool TryGetNextQuestionLine(LinesEnumerator lines, out NumberedQuestionLine? line)
         {
             // Skip lines until we get to the next question
             line = null;
@@ -115,14 +115,27 @@ namespace YetAnotherPacketParser.Parser
 
             do
             {
-                if (lines.Current.Number.HasValue)
+                if (lines.Current.Type == LineType.NumberedQuestion &&
+                    lines.Current is NumberedQuestionLine numberedLine)
                 {
-                    line = lines.Current;
+                    line = numberedLine;
                     return true;
                 }
             } while (lines.MoveNext());
 
             return false;
+        }
+
+        private static bool TryGetQuestionNumber(ILine line, out int questionNumber)
+        {
+            questionNumber = 0;
+            if (!(line.Type == LineType.NumberedQuestion && line is NumberedQuestionLine numberedLine))
+            {
+                return false;
+            }
+
+            questionNumber = numberedLine.Number;
+            return true;
         }
 
         private IResult<List<TossupNode>> ParseTossups(LinesEnumerator lines, out bool moreLinesExist)
@@ -132,12 +145,10 @@ namespace YetAnotherPacketParser.Parser
             List<TossupNode> tossupNodes = new List<TossupNode>();
 
             // If the question number drops, it means we're in bonuses now, so stop parsing tossups
-            Line? line;
-            while (TryGetNextQuestionLine(lines, out line) &&
-                line?.Number != null &&
-                line.Number > currentQuestionNumber)
+            NumberedQuestionLine? line;
+            while (TryGetNextQuestionLine(lines, out line) && line != null && line.Number > currentQuestionNumber)
             {
-                currentQuestionNumber = line.Number.Value;
+                currentQuestionNumber = line.Number;
 
                 IResult<TossupNode> tossupResult = this.ParseTossup(lines, tossupNodes.Count + 1);
                 if (!tossupResult.Success)
@@ -179,13 +190,12 @@ namespace YetAnotherPacketParser.Parser
 
         private IResult<TossupNode> ParseTossup(LinesEnumerator lines, int tossupNumber)
         {
-            if (!lines.Current.Number.HasValue)
+            if (!TryGetQuestionNumber(lines.Current, out int questionNumber))
             {
                 return new FailureResult<TossupNode>(GetFailureMessage(
                     lines, $"Failed to parse tossup #{tossupNumber}. No question number found."));
             }
 
-            int questionNumber = lines.Current.Number.Value;
             IResult<QuestionNode> questionResult = this.ParseQuestion(lines, $"tossup #{tossupNumber}");
             if (!questionResult.Success)
             {
@@ -199,13 +209,11 @@ namespace YetAnotherPacketParser.Parser
 
         private IResult<BonusNode> ParseBonus(LinesEnumerator lines, int bonusNumber)
         {
-            if (!lines.Current.Number.HasValue)
+            if (!TryGetQuestionNumber(lines.Current, out int questionNumber))
             {
                 return new FailureResult<BonusNode>(GetFailureMessage(
                     lines, $"Failed to parse bonus #{bonusNumber}. No question number found."));
             }
-
-            int questionNumber = lines.Current.Number.Value;
 
             IResult<FormattedText> leadinResult = this.GetTextFromLines(
                 lines, $"Bonus leadin (#{bonusNumber})", IsEndOfLeadin);
@@ -229,7 +237,7 @@ namespace YetAnotherPacketParser.Parser
             List<BonusPartNode> parts = new List<BonusPartNode>();
             do
             {
-                if (!lines.Current.PartValue.HasValue)
+                if (lines.Current.Type != LineType.BonusPart)
                 {
                     // We're no longer on bonus parts, so get out of the loop
                     break;
@@ -259,14 +267,14 @@ namespace YetAnotherPacketParser.Parser
             // Should follow the format
             // [value] question
             // ANSWER: xxx
-            if (!lines.Current.PartValue.HasValue)
+            if (!(lines.Current.Type == LineType.BonusPart && lines.Current is BonusPartLine bonusPartLine))
             {
                 return new FailureResult<BonusPartNode>(GetFailureMessage(
                      lines,
                      "Failed to parse bonus part. Couldn't find the part's value."));
             }
 
-            int partValue = lines.Current.PartValue.Value;
+            int partValue = bonusPartLine.Value;
             IResult<QuestionNode> questionResult = this.ParseQuestion(lines, $"bonus part #{bonusPartNumber}");
             if (!questionResult.Success)
             {
@@ -283,10 +291,12 @@ namespace YetAnotherPacketParser.Parser
             {
                 return new FailureResult<QuestionNode>(questionResult.ErrorMessage);
             }
-            else if (lines.Current.Number.HasValue)
+            else if (lines.Current.Type != LineType.Answer)
             {
                 return new FailureResult<QuestionNode>(GetFailureMessage(
-                    lines, $"Failed to parse {context}. Expected answer line starts with a question number in it."));
+                    lines,
+                    $"Failed to parse {context}. Expected answer line, but found an " +
+                    $"\"{Enum.GetName(typeof(LineType), lines.Current.Type)}\" line."));
             }
 
             // We can't support multi-line answers, since the answer is the last part of the unit (tossup or bonus).
@@ -299,7 +309,7 @@ namespace YetAnotherPacketParser.Parser
             return new SuccessResult<QuestionNode>(new QuestionNode(questionResult.Value, answer));
         }
 
-        private IResult<FormattedText> GetTextFromLines(LinesEnumerator lines, string context, Func<Line, bool> isEnd)
+        private IResult<FormattedText> GetTextFromLines(LinesEnumerator lines, string context, Func<ILine, bool> isEnd)
         {
             FormattedText formattedText = lines.Current.Text;
             IEnumerable<FormattedTextSegment> formattedTextSegments = formattedText.Segments;
@@ -341,19 +351,19 @@ namespace YetAnotherPacketParser.Parser
             return new SuccessResult<FormattedText>(formattedText);
         }
 
-        private class LinesEnumerator : IEnumerator<Line>
+        private class LinesEnumerator : IEnumerator<ILine>
         {
-            public LinesEnumerator(IEnumerable<Line> lines)
+            public LinesEnumerator(IEnumerable<ILine> lines)
             {
                 this.Enumerator = lines.GetEnumerator();
                 this.LineNumber = 1;
             }
 
-            public Line Current => this.Enumerator.Current;
+            public ILine Current => this.Enumerator.Current;
 
             public int LineNumber { get; private set; }
 
-            private IEnumerator<Line> Enumerator { get; }
+            private IEnumerator<ILine> Enumerator { get; }
 
             object? IEnumerator.Current => this.Enumerator.Current;
 

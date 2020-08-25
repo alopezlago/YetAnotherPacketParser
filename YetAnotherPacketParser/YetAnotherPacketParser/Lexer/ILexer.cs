@@ -6,6 +6,6 @@ namespace YetAnotherPacketParser.Lexer
 {
     public interface ILexer
     {
-        Task<IResult<IEnumerable<Line>>> GetLines(Stream stream);
+        Task<IResult<IEnumerable<ILine>>> GetLines(Stream stream);
     }
 }
