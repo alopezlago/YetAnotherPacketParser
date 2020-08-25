@@ -24,6 +24,12 @@ namespace YetAnotherPacketParser.Parser
 
         public LinesParserOptions Options { get; }
 
+        /// <summary>
+        /// Converts the list of lines into an abstract syntax tree, with the PacketNode as a root.
+        /// </summary>
+        /// <param name="lines">Lines of the packet to parse</param>
+        /// <returns>If parsing was successful, a PacketNode representing the structure of the packet. Otherwise, an
+        /// error message explaining what went wrong.</returns>
         public IResult<PacketNode> Parse(IEnumerable<ILine> lines)
         {
             Verify.IsNotNull(lines, nameof(lines));

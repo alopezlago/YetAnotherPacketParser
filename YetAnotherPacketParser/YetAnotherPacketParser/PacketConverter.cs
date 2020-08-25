@@ -6,12 +6,14 @@ using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using YetAnotherPacketParser.Ast;
-using YetAnotherPacketParser.Compiler;
+using YetAnotherPacketParser.Compiler.Html;
+using YetAnotherPacketParser.Compiler.Json;
 using YetAnotherPacketParser.Lexer;
 using YetAnotherPacketParser.Parser;
 
 namespace YetAnotherPacketParser
 {
+    // TODO: make this easier to unit test. That requires making CompilePacketAsync accessible or mockable.
     public static class PacketConverter
     {
         /// <summary>

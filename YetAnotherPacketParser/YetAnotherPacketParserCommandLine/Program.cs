@@ -27,6 +27,8 @@ namespace YetAnotherPacketParserCommandLine
             // - Consider adding a mode where MaximumLineCountBeforeNextStage is what we build up to, and we either
             //   start parsing at 1 line and increase linearly up to it, or use binary search/doubling to build up to
             //   it, to parse. That way, parsing will feel self-correcting, and users won't have to guess themselves.
+            // - Make LinesParser or FailureResult support multiple error messages, so we can find most problems in a
+            //   packet in one shot.
 
             await Parser.Default.ParseArguments<CommandLineOptions>(args)
                 .WithParsedAsync(options => RunAsync(options)).ConfigureAwait(false);
