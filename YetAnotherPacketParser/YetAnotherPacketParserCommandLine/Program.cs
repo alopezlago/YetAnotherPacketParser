@@ -29,6 +29,9 @@ namespace YetAnotherPacketParserCommandLine
             //   it, to parse. That way, parsing will feel self-correcting, and users won't have to guess themselves.
             // - Make LinesParser or FailureResult support multiple error messages, so we can find most problems in a
             //   packet in one shot.
+            // - Move failure strings to a static class, or include more information in FailureResult (like an error
+            //   code).This way, we can check what the error is in the test without having to update it if we change
+            //   the language
 
             await Parser.Default.ParseArguments<CommandLineOptions>(args)
                 .WithParsedAsync(options => RunAsync(options)).ConfigureAwait(false);

@@ -242,6 +242,39 @@ namespace YetAnotherPacketParserTests
             Assert.IsFalse(packetResult.Success);
         }
 
+        [TestMethod]
+        public void BonusWithNoBonusPartsFails()
+        {
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(1, "Bonus leadin"),
+                CreateQuestionLine(2, "Another leadin and question"),
+                CreatePartLine("Bonus part that is", 10),
+                CreateAnswerLine("Answer again"),
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+        }
+
+        [TestMethod]
+        public void TossupWithNoAnswerFails()
+        {
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateQuestionLine(2, "Second tossup!"),
+                CreateAnswerLine("Answer")
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+        }
+
         private static AnswerLine CreateAnswerLine(string text)
         {
             return new AnswerLine(CreateFormattedText(text));
