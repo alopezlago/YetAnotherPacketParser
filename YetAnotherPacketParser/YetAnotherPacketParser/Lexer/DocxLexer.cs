@@ -33,7 +33,7 @@ namespace YetAnotherPacketParser.Lexer
         /// <param name="stream">Stream whose contents are a .docx Microsoft Word file</param>
         /// <returns>If we were unable to open the stream, then the result is a FailureResult. Otherwise, it is a
         /// SuccessResult with a collection of lines from the document.</returns>
-        public Task<IResult<IEnumerable<Line>>> GetLines(Stream stream)
+        public Task<IResult<IEnumerable<ILine>>> GetLines(Stream stream)
         {
             Verify.IsNotNull(stream, nameof(stream));
 
@@ -43,38 +43,38 @@ namespace YetAnotherPacketParser.Lexer
                     stream, isEditable: false, openSettings: DocOpenSettings))
                 {
                     Body body = document.MainDocumentPart.Document.Body;
-                    IResult<IEnumerable<Line>> lines = new SuccessResult<IEnumerable<Line>>(GetLinesFromBody(body));
+                    IResult<IEnumerable<ILine>> lines = new SuccessResult<IEnumerable<ILine>>(GetLinesFromBody(body));
                     return Task.FromResult(lines);
                 }
             }
             catch (ArgumentNullException ex)
             {
                 Console.Error.WriteLine(ex);
-                IResult<IEnumerable<Line>> lines = new FailureResult<IEnumerable<Line>>("Unexpected null value found");
+                IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>("Unexpected null value found");
                 return Task.FromResult(lines);
             }
             catch (OpenXmlPackageException ex)
             {
                 Console.Error.WriteLine(ex);
-                IResult<IEnumerable<Line>> lines = new FailureResult<IEnumerable<Line>>(
+                IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>(
                     "Unable to open the .docx file: " + ex.Message);
                 return Task.FromResult(lines);
             }
             catch (FileFormatException ex)
             {
                 Console.Error.WriteLine(ex);
-                IResult<IEnumerable<Line>> lines = new FailureResult<IEnumerable<Line>>(
+                IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>(
                     "Unable to open the .docx file: " + ex.Message);
                 return Task.FromResult(lines);
             }
         }
 
-        private static IEnumerable<Line> GetLinesFromBody(Body body)
+        private static IEnumerable<ILine> GetLinesFromBody(Body body)
         {
             // Get the list of lines with OpenXML SDK specific classes, then convert those to format-independent Line
             // instances.
             List<TextBlockLine> textBlockLines = GetTextBlockLines(body);
-            List<Line> lines = GetLinesFromTextBlockLines(textBlockLines);
+            List<ILine> lines = GetLinesFromTextBlockLines(textBlockLines);
             return lines;
         }
 
@@ -131,8 +131,9 @@ namespace YetAnotherPacketParser.Lexer
             return textBlockLines;
         }
 
-        // TODO: See if there's a way to break up this method (+100 lines)
-        private static List<Line> GetLinesFromTextBlockLines(IEnumerable<TextBlockLine> textBlockLines)
+        // TODO: See if there's a way to break up this method (+100 lines). We could move the inner loop elsewhere, but
+        // that only saves about 10 lines.
+        private static List<ILine> GetLinesFromTextBlockLines(IEnumerable<TextBlockLine> textBlockLines)
         {
             // TODO: Potential issue: if the numbering doesn't start at 1, then we're off. We could look up the
             // numbering index in the docx file, but question 0s are rare
@@ -144,7 +145,7 @@ namespace YetAnotherPacketParser.Lexer
             bool italic = false;
             bool underlined = false;
 
-            List<Line> lines = new List<Line>();
+            List<ILine> lines = new List<ILine>();
             foreach (TextBlockLine textBlockLine in textBlockLines)
             {
                 List<FormattedTextSegment> formattedTextSegments = new List<FormattedTextSegment>();
@@ -204,17 +205,16 @@ namespace YetAnotherPacketParser.Lexer
 
                 // Check the first block to see if it's an answer or digit block
                 // Also, don't add empty lines
-                int? questionNumber = null;
-                int? bonusPartValue = null;
-                bool isAnswerLine = false;
                 if (formattedTextSegments.Count > 0)
                 {
                     FormattedText formattedText = new FormattedText(formattedTextSegments);
 
                     string unformattedText = formattedText.UnformattedText;
+                    ILine line;
                     if (TextStartsWithQuestionDigit(
                         unformattedText, out string? matchValue, out int? parsedQuestionNumber))
                     {
+                        int questionNumber = 0;
                         if (parsedQuestionNumber.HasValue)
                         {
                             questionNumber = parsedQuestionNumber.Value;
@@ -226,31 +226,31 @@ namespace YetAnotherPacketParser.Lexer
                             questionNumber = currentQuestionNumber;
                             currentQuestionNumber++;
                         }
+
+                        line = new NumberedQuestionLine(
+                            formattedText.Substring(matchValue.Length), questionNumber);
+                    }
+                    else if (currentNumberingId != null)
+                    {
+                        // docx will use NumberingId instead of including the digit in the document. Therefore, we have
+                        // to set a question number in lines that have a numbering ID.
+                        line = new NumberedQuestionLine(formattedText.Substring(matchValue.Length), currentQuestionNumber);
+                        currentQuestionNumber++;
                     }
                     else if (TextStartsWithAnswer(unformattedText, out matchValue))
                     {
-                        isAnswerLine = true;
+                        line = new AnswerLine(formattedText.Substring(matchValue.Length));
                     }
-                    else if (TextStartsWithBonsuPart(unformattedText, out matchValue, out int? partValue)
-                        && partValue != null)
+                    else if (TextStartsWithBonsuPart(unformattedText, out matchValue, out int? partValue) &&
+                        partValue != null)
                     {
-                        bonusPartValue = partValue;
+                        line = new BonusPartLine(formattedText.Substring(matchValue.Length), partValue.Value);
+                    }
+                    else
+                    {
+                        line = new Line(formattedText);
                     }
 
-                    if (matchValue != null)
-                    {
-                        formattedText = formattedText.Substring(matchValue.Length);
-                    }
-
-                    // docx will use NumberingId instead of including the digit in the document. Therefore, we have to
-                    // set a question number in lines that have a numbering ID.
-                    if (questionNumber == null && currentNumberingId != null)
-                    {
-                        questionNumber = currentQuestionNumber;
-                        currentQuestionNumber++;
-                    }
-
-                    Line line = new Line(formattedText, questionNumber, bonusPartValue, isAnswerLine);
                     lines.Add(line);
                 }
             }
@@ -258,13 +258,13 @@ namespace YetAnotherPacketParser.Lexer
             return lines;
         }
 
-        private static bool TextStartsWithQuestionDigit(string text, out string? matchValue, out int? number)
+        private static bool TextStartsWithQuestionDigit(string text, out string matchValue, out int? number)
         {
             number = null;
             Match match = QuestionDigitRegEx.Match(text);
             if (!match.Success)
             {
-                matchValue = null;
+                matchValue = string.Empty;
                 number = null;
                 return false;
             }
@@ -279,12 +279,12 @@ namespace YetAnotherPacketParser.Lexer
             return true;
         }
 
-        private static bool TextStartsWithAnswer(string text, out string? matchValue)
+        private static bool TextStartsWithAnswer(string text, out string matchValue)
         {
             Match match = AnswerRegEx.Match(text);
             if (!match.Success)
             {
-                matchValue = null;
+                matchValue = string.Empty;
                 return false;
             }
 
@@ -292,13 +292,13 @@ namespace YetAnotherPacketParser.Lexer
             return true;
         }
 
-        private static bool TextStartsWithBonsuPart(string text, out string? matchValue, out int? partValue)
+        private static bool TextStartsWithBonsuPart(string text, out string matchValue, out int? partValue)
         {
             partValue = null;
             Match match = BonusPartValueRegex.Match(text);
             if (!match.Success)
             {
-                matchValue = null;
+                matchValue = string.Empty;
                 return false;
             }
 
