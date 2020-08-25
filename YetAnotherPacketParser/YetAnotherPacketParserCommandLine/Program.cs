@@ -24,7 +24,9 @@ namespace YetAnotherPacketParserCommandLine
             // - Add tests for
             //     - LineParser (different failure modes, successes with different line modes)
             // - Add HTML as an input
-            // - Add verbose as a command-line option
+            // - Consider adding a mode where MaximumLineCountBeforeNextStage is what we build up to, and we either
+            //   start parsing at 1 line and increase linearly up to it, or use binary search/doubling to build up to
+            //   it, to parse. That way, parsing will feel self-correcting, and users won't have to guess themselves.
 
             await Parser.Default.ParseArguments<CommandLineOptions>(args)
                 .WithParsedAsync(options => RunAsync(options)).ConfigureAwait(false);
@@ -44,6 +46,7 @@ namespace YetAnotherPacketParserCommandLine
             }
 
             IPacketConverterOptions packetCompilerOptions;
+            Action<LogLevel, string> log = (logLevel, message) => Log(options, logLevel, message);
             switch (options.OutputFormat.Trim().ToUpper())
             {
                 case "JSON":
@@ -52,7 +55,7 @@ namespace YetAnotherPacketParserCommandLine
                         StreamName = options.Input,
                         MaximumLineCountBeforeNextStage = options.MaximumLineCountBeforeNextStage,
                         PrettyPrint = options.PrettyPrint,
-                        Log = Log
+                        Log = log
                     };
                     break;
                 case "HTML":
@@ -60,7 +63,7 @@ namespace YetAnotherPacketParserCommandLine
                     {
                         StreamName = options.Input,
                         MaximumLineCountBeforeNextStage = options.MaximumLineCountBeforeNextStage,
-                        Log = Log
+                        Log = log
                     };
                     break;
                 default:
@@ -135,9 +138,13 @@ namespace YetAnotherPacketParserCommandLine
             Console.WriteLine($"Output written to {options.Output}");
         }
 
-        private static void Log(LogLevel logLevel, string message)
+        private static void Log(CommandLineOptions options, LogLevel logLevel, string message)
         {
-            // TODO: Have verbose command line option
+            if (!options.Verbose && logLevel == LogLevel.Verbose)
+            {
+                return;
+            }
+
             Console.WriteLine(message);
         }
     }
