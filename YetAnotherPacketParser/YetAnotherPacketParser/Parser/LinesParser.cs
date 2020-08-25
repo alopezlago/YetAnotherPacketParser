@@ -75,7 +75,17 @@ namespace YetAnotherPacketParser.Parser
         private static string GetFailureMessage(LinesEnumerator lines, string message)
         {
             StringBuilder snippet = new StringBuilder(10);
-            if (lines.Current != null)
+            ILine? currentLine = null;
+            try
+            {
+                currentLine = lines.Current;
+            }
+            catch (InvalidOperationException)
+            {
+                // We're at the end. No more lines
+            }
+
+            if (currentLine != null)
             {
                 int remainingLength = FailureSnippetCharacterLimit;
                 foreach (FormattedTextSegment segment in lines.Current.Text.Segments)

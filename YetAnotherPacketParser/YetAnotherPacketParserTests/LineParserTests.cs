@@ -224,6 +224,24 @@ namespace YetAnotherPacketParserTests
             Assert.AreEqual(answer, bonusPart.Question.Answer.UnformattedText, "Unexpected bonus part answer");
         }
 
+        [TestMethod]
+        public void BonusPartWithNoAnswerFails()
+        {
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(1, "Bonus leadin"),
+                CreatePartLine("Bonus part that is", 10),
+                CreateAnswerLine("Answer again"),
+                CreatePartLine("Second part question with no answer", 10)
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+        }
+
         private static AnswerLine CreateAnswerLine(string text)
         {
             return new AnswerLine(CreateFormattedText(text));
