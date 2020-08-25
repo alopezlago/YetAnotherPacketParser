@@ -34,7 +34,7 @@ namespace YetAnotherPacketParser.Compiler
         public PacketNode Sanitize(PacketNode packet)
         {
             Verify.IsNotNull(packet, nameof(packet));
-          
+
             List<TossupNode> sanitizedTossups = this.SanitizeTossups(packet.Tossups);
             List<BonusNode>? sanitizedBonuses = packet.Bonuses == null ? null : this.SanitizeBonuses(packet.Bonuses);
 

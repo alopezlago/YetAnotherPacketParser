@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using DocumentFormat.OpenXml.Office2013.Excel;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using YetAnotherPacketParser;
 using YetAnotherPacketParser.Ast;
@@ -30,7 +29,7 @@ namespace YetAnotherPacketParserTests
             const string questionText = "This is my tossup";
             const string answer = "An answer";
 
-            Line[] lines = new Line[]
+            ILine[] lines = new ILine[]
             {
                 CreateQuestionLine(number, questionText),
                 CreateAnswerLine(answer)
@@ -61,7 +60,7 @@ namespace YetAnotherPacketParserTests
             string[] bonusParts = new string[] { "Part #1", "Part #2" };
             string[] bonusAnswers = new string[] { "Answer #1", "Answer #2" };
 
-            List<Line> lines = new List<Line>()
+            List<ILine> lines = new List<ILine>()
             {
                 CreateQuestionLine(number, tossupQuestionText),
                 CreateAnswerLine(tossupAnswer),
@@ -112,7 +111,7 @@ namespace YetAnotherPacketParserTests
             string[] questions = new string[] { "This is my tossup", "Another tossup" };
             string[] answers = new string[] { "An answer", "Answer #2" };
 
-            Line[] lines = new Line[]
+            ILine[] lines = new ILine[]
             {
                 CreateQuestionLine(1, questions[0]),
                 CreateAnswerLine(answers[0]),
@@ -147,7 +146,7 @@ namespace YetAnotherPacketParserTests
             const string remainingQuestionText = " that was split";
             const string answer = "An answer";
 
-            Line[] lines = new Line[]
+            ILine[] lines = new ILine[]
             {
                 CreateQuestionLine(number, questionText),
                 new Line(CreateFormattedText(remainingQuestionText)),
@@ -186,7 +185,7 @@ namespace YetAnotherPacketParserTests
             const string remainingQuestionText = " split";
             const string answer = "An answer";
 
-            Line[] lines = new Line[]
+            ILine[] lines = new ILine[]
             {
                 CreateQuestionLine(1, "Tossup"),
                 CreateAnswerLine("Answer"),
@@ -225,9 +224,60 @@ namespace YetAnotherPacketParserTests
             Assert.AreEqual(answer, bonusPart.Question.Answer.UnformattedText, "Unexpected bonus part answer");
         }
 
-        private static Line CreateAnswerLine(string text)
+        [TestMethod]
+        public void BonusPartWithNoAnswerFails()
         {
-            return new Line(CreateFormattedText(text), isAnswerLine: true);
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(1, "Bonus leadin"),
+                CreatePartLine("Bonus part that is", 10),
+                CreateAnswerLine("Answer again"),
+                CreatePartLine("Second part question with no answer", 10)
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+        }
+
+        [TestMethod]
+        public void BonusWithNoBonusPartsFails()
+        {
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(1, "Bonus leadin"),
+                CreateQuestionLine(2, "Another leadin and question"),
+                CreatePartLine("Bonus part that is", 10),
+                CreateAnswerLine("Answer again"),
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+        }
+
+        [TestMethod]
+        public void TossupWithNoAnswerFails()
+        {
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateQuestionLine(2, "Second tossup!"),
+                CreateAnswerLine("Answer")
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+        }
+
+        private static AnswerLine CreateAnswerLine(string text)
+        {
+            return new AnswerLine(CreateFormattedText(text));
         }
 
         private static FormattedText CreateFormattedText(string text)
@@ -235,14 +285,14 @@ namespace YetAnotherPacketParserTests
             return new FormattedText(new FormattedTextSegment[] { new FormattedTextSegment(text) });
         }
 
-        private static Line CreatePartLine(string text, int partValue)
+        private static BonusPartLine CreatePartLine(string text, int partValue)
         {
-            return new Line(CreateFormattedText(text), partValue: partValue);
+            return new BonusPartLine(CreateFormattedText(text), partValue);
         }
 
-        private static Line CreateQuestionLine(int number, string text)
+        private static NumberedQuestionLine CreateQuestionLine(int number, string text)
         {
-            return new Line(CreateFormattedText(text), number: number);
+            return new NumberedQuestionLine(CreateFormattedText(text), number);
         }
     }
 }

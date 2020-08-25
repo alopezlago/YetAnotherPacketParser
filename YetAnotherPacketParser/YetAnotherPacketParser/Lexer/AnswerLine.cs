@@ -1,19 +1,19 @@
 ﻿namespace YetAnotherPacketParser.Lexer
 {
-    public class Line : ILine
+    public class AnswerLine : ILine
     {
-        public Line(FormattedText text)
+        public AnswerLine(FormattedText text)
         {
             this.Text = text;
         }
 
-        public LineType Type => LineType.Unclassified;
+        public LineType Type => LineType.Answer;
 
         public FormattedText Text { get; }
 
         public override string ToString()
         {
-            return this.Text.ToString();
+            return $"ANSWER: {this.Text}";
         }
     }
 }

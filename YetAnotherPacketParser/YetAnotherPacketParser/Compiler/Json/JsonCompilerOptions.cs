@@ -1,4 +1,4 @@
-﻿namespace YetAnotherPacketParser.Compiler
+﻿namespace YetAnotherPacketParser.Compiler.Json
 {
     public class JsonCompilerOptions
     {

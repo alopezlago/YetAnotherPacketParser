@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using YetAnotherPacketParser.Ast;
 
-namespace YetAnotherPacketParser.Compiler
+namespace YetAnotherPacketParser.Compiler.Html
 {
     public class HtmlCompiler : ICompiler
     {
