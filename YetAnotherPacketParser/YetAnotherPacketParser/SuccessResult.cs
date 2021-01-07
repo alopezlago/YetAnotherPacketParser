@@ -23,7 +23,7 @@ namespace YetAnotherPacketParser
 
         public override string ToString()
         {
-            return this.Value?.ToString() ?? "<null>";
+            return this.Value?.ToString() ?? Strings.Null;
         }
     }
 }

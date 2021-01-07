@@ -53,8 +53,7 @@ namespace YetAnotherPacketParser
                     if (docxEntries.Count() > options.MaximumPackets)
                     {
                         return CreateFailedCompileResultArray(
-                            options.StreamName,
-                            $"Too many documents to parse. This only parses at most {options.MaximumPackets} documents at a time.");
+                            options.StreamName, Strings.TooManyPacketsToParse(options.MaximumPackets));
                     }
 
                     ZipArchiveEntry? largeEntry = docxEntries
@@ -64,7 +63,7 @@ namespace YetAnotherPacketParser
                         double maxLengthInMB = options.MaximumPacketSizeInBytes / 1024.0 / 1024;
                         return CreateFailedCompileResultArray(
                             largeEntry.Name,
-                            $"Document \"{largeEntry.Name}\" is too large. Documents must be {maxLengthInMB} MB or less.");
+                            Strings.DocumentTooLarge(largeEntry.Name, maxLengthInMB));
                     }
 
                     ConvertResult[] compileResults = await Task.WhenAll(
@@ -76,11 +75,11 @@ namespace YetAnotherPacketParser
             }
             catch (ArgumentException ex)
             {
-                return CreateFailedCompileResultArray(options.StreamName, $"Unknown error: {ex.Message}");
+                return CreateFailedCompileResultArray(options.StreamName, Strings.UnknownError(ex.Message));
             }
             catch (InvalidDataException ex)
             {
-                return CreateFailedCompileResultArray(options.StreamName, $"Invalid data: {ex.Message}");
+                return CreateFailedCompileResultArray(options.StreamName, Strings.InvalidData(ex.Message));
             }
         }
 
@@ -121,7 +120,7 @@ namespace YetAnotherPacketParser
 
             if (!linesResult.Success)
             {
-                return CreateFailedCompileResult(packetName, $"Lexing error. {linesResult.ErrorMessage}");
+                return CreateFailedCompileResult(packetName, Strings.LexingError(linesResult.ErrorMessage));
             }
 
             options.Log?.Invoke(LogLevel.Verbose, $"{packetName}: Lexing complete.");
@@ -138,7 +137,7 @@ namespace YetAnotherPacketParser
 
             if (!packetNodeResult.Success)
             {
-                return CreateFailedCompileResult(packetName, $"Parse error: {packetNodeResult.ErrorMessage}");
+                return CreateFailedCompileResult(packetName, Strings.ParseError(packetNodeResult.ErrorMessage));
             }
 
             PacketNode packetNode = packetNodeResult.Value;
@@ -174,8 +173,7 @@ namespace YetAnotherPacketParser
 
             if (string.IsNullOrEmpty(outputContents))
             {
-                return CreateFailedCompileResult(
-                    packetName, "No output to write. Did you choose a correct format (json, html)?");
+                return CreateFailedCompileResult(packetName, Strings.UnknownOutputError);
             }
 
             long totalTimeMs = timeInMsLines + timeInMsParse + timeInMsCompile;

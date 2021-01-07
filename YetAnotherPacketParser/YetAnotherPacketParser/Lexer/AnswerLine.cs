@@ -13,7 +13,7 @@
 
         public override string ToString()
         {
-            return $"ANSWER: {this.Text}";
+            return Strings.AnswerLine(this.Text.ToString());
         }
     }
 }
