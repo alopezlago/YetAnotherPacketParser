@@ -10,8 +10,10 @@ namespace YetAnotherPacketParser
         public const string CannotParseEmptyPacket = "Cannot parse empty packet.";
         public const string CouldntFindBonusPartValue = "Failed to parse bonus part. Couldn't find the part's value.";
         public const string CouldntFindBonusPartValueInFirstBlock = "Failed to parse bonus parts. Couldn't find the part's value in the first block of text.";
+        public const string LexingError = "Lexing Error.";
         public const string NoTossupsFound = "Failed to parse tossups. No tossups found.";
         public const string Null = "<null>";
+        public const string ParseError = "Parse Error.";
         public const string UnexpectedNullValue = "Unexpected null value found";
         public const string UnknownOutputError = "No output to write. Did you choose a correct format (json, html)?";
         public const string ValueMustBeGreaterThanZero = "Value must be greater than 0";
@@ -42,11 +44,6 @@ namespace YetAnotherPacketParser
             return $"Invalid data: {message}";
         }
 
-        public static string LexingError(string errorMessage)
-        {
-            return $"Lexing error. {errorMessage}";
-        }
-
         public static string NoBonusQuestionNumberFound(int bonusNumber)
         {
             return $"Failed to parse bonus #{bonusNumber}. No question number found.";
@@ -61,15 +58,10 @@ namespace YetAnotherPacketParser
         {
             return $"Failed to parse tossup #{tossupNumber}. No question number found.";
         }
-        
+
         public static string NumberedQuestion(int number, string questionText)
         {
             return $"{number}. {questionText}";
-        }
-
-        public static string ParseError(string errorMessage)
-        {
-            return $"Parse error: {errorMessage}";
         }
 
         public static string ParseFailureMessage(string message, int lineNumber, string snippet)

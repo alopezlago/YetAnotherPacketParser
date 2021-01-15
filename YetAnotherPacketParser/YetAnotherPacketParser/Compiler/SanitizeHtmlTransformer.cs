@@ -110,10 +110,9 @@ namespace YetAnotherPacketParser.Compiler
             {
                 // Caching short segments improved perf by 5-10% in release builds. Sanitizing FormattedTexts takes the
                 //  majority of the time for the whole compilation cycle (lex, parse, compile).
-                string sanitizedText;
                 if (rawSegment.Text.Length > MaxCachedFragmentLength || !this.CachedShortSegments.TryGetValue(
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type. We only put non-null strings here
-                    rawSegment.Text, out sanitizedText))
+                    rawSegment.Text, out string sanitizedText))
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                 {
                     sanitizedText = this.Sanitizer.Sanitize(rawSegment.Text);

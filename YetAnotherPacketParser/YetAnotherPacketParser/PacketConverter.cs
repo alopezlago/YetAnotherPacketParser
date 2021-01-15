@@ -93,6 +93,12 @@ namespace YetAnotherPacketParser
             return new ConvertResult(streamName, new FailureResult<string>(message));
         }
 
+        private static ConvertResult CreateFailedCompileResult(
+            string streamName, string phaseErrorMessage, IEnumerable<string> resultErrorMessages)
+        {
+            return new ConvertResult(streamName, new FailureResult<string>(resultErrorMessages.Prepend(phaseErrorMessage)));
+        }
+
         private static async Task<ConvertResult> CompilePacketAsync(
             string packetName, Stream packetStream, IPacketConverterOptions options)
         {
@@ -120,7 +126,7 @@ namespace YetAnotherPacketParser
 
             if (!linesResult.Success)
             {
-                return CreateFailedCompileResult(packetName, Strings.LexingError(linesResult.ErrorMessage));
+                return CreateFailedCompileResult(packetName, Strings.LexingError, linesResult.ErrorMessages);
             }
 
             options.Log?.Invoke(LogLevel.Verbose, $"{packetName}: Lexing complete.");
@@ -137,7 +143,7 @@ namespace YetAnotherPacketParser
 
             if (!packetNodeResult.Success)
             {
-                return CreateFailedCompileResult(packetName, Strings.ParseError(packetNodeResult.ErrorMessage));
+                return CreateFailedCompileResult(packetName, Strings.ParseError, packetNodeResult.ErrorMessages);
             }
 
             PacketNode packetNode = packetNodeResult.Value;

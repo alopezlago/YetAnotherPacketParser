@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace YetAnotherPacketParser
 {
@@ -17,7 +18,7 @@ namespace YetAnotherPacketParser
 
         public bool Success => true;
 
-        public string ErrorMessage => throw new NotSupportedException();
+        public IEnumerable<string> ErrorMessages => throw new NotSupportedException();
 
         public T Value { get; }
 
