@@ -240,6 +240,7 @@ namespace YetAnotherPacketParserTests
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
             Assert.IsFalse(packetResult.Success);
+            Assert.AreEqual(1, packetResult.ErrorMessages.Count());
         }
 
         [TestMethod]
@@ -258,6 +259,7 @@ namespace YetAnotherPacketParserTests
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
             Assert.IsFalse(packetResult.Success);
+            Assert.AreEqual(1, packetResult.ErrorMessages.Count());
         }
 
         [TestMethod]
@@ -273,6 +275,99 @@ namespace YetAnotherPacketParserTests
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
             Assert.IsFalse(packetResult.Success);
+            Assert.AreEqual(1, packetResult.ErrorMessages.Count());
+        }
+
+        [TestMethod]
+        public void MultipleTossupFailuresReturned()
+        {
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateQuestionLine(2, "Second tossup!"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(3, "Third tossup"),
+                CreateQuestionLine(4, "Fourth tossup"),
+                CreateAnswerLine("Fourth Answer"),
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+            Assert.AreEqual(2, packetResult.ErrorMessages.Count());
+
+            string firstError = packetResult.ErrorMessages.First();
+            Assert.IsTrue(
+                firstError.Contains("Second"),
+                $"First error message doesn't contain the line for the 2nd tossup. Message: {firstError}");
+
+            string secondError = packetResult.ErrorMessages.ElementAt(1);
+            Assert.IsTrue(
+                secondError.Contains("Fourth"),
+                $"Second error message doesn't contain the line for the 4th tossup. Message: {secondError}");
+        }
+
+        [TestMethod]
+        public void MultipleBonusFailuresReturned()
+        {
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(1, "Bonus leadin"),
+                CreateQuestionLine(2, "Another leadin and question"),
+                CreatePartLine("Bonus part that is", 10),
+                CreateAnswerLine("Answer again"),
+                CreateQuestionLine(3, "Third bonus leadin"),
+                CreateQuestionLine(4, "Fourth leadin and question"),
+                CreatePartLine("Some part", 10),
+                CreateAnswerLine("Answer again"),
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+            Assert.AreEqual(2, packetResult.ErrorMessages.Count());
+
+            string firstError = packetResult.ErrorMessages.First();
+            Assert.IsTrue(
+                packetResult.ErrorMessages.First().Contains("Another leadin"),
+                $"First error message doesn't contain the right line. Message: {firstError}");
+
+            string secondError = packetResult.ErrorMessages.ElementAt(1);
+            Assert.IsTrue(
+                secondError.Contains("Fourth leadin"),
+                $"Second error message doesn't contain the right line. Message: {secondError}");
+        }
+
+        [TestMethod]
+        public void TossupAndBonusFailuresReturned()
+        {
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateQuestionLine(2, "Second Tossup"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(1, "Bonus leadin"),
+                CreateQuestionLine(2, "Another leadin and question"),
+                CreatePartLine("Bonus part", 10),
+                CreateAnswerLine("Answer again"),
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+            Assert.AreEqual(2, packetResult.ErrorMessages.Count());
+
+            string firstError = packetResult.ErrorMessages.First();
+            Assert.IsTrue(
+                firstError.Contains("Second"),
+                $"First error message doesn't contain the right line. Message: {firstError}");
+
+            string secondError = packetResult.ErrorMessages.ElementAt(1);
+            Assert.IsTrue(
+                secondError.Contains("Another leadin"),
+                $"Second error message doesn't contain the right line. Message: {secondError}");
         }
 
         private static AnswerLine CreateAnswerLine(string text)

@@ -21,17 +21,12 @@ namespace YetAnotherPacketParserCommandLine
             // TODO:
             // - Handle tiebreakers in Berk B/MIT A case, where it's not labeled as a tiebreaker one. This requires a
             //   change in parsing logic, where we do a lookahead and find answers, or go back after finding an answer
-            // - Add tests for
-            //     - LineParser (different failure modes, successes with different line modes)
             // - Add HTML as an input
             // - Consider adding a mode where MaximumLineCountBeforeNextStage is what we build up to, and we either
             //   start parsing at 1 line and increase linearly up to it, or use binary search/doubling to build up to
             //   it, to parse. That way, parsing will feel self-correcting, and users won't have to guess themselves.
-            // - Make LinesParser or FailureResult support multiple error messages, so we can find most problems in a
-            //   packet in one shot.
-            // - Move failure strings to a static class, or include more information in FailureResult (like an error
-            //   code).This way, we can check what the error is in the test without having to update it if we change
-            //   the language
+            // - Add something to the success output to see if there are any bonuses that don't have the standard
+            //   number of parts (e.g. highlight anything without 3 parts)
 
             await Parser.Default.ParseArguments<CommandLineOptions>(args)
                 .WithParsedAsync(options => RunAsync(options)).ConfigureAwait(false);
@@ -93,7 +88,7 @@ namespace YetAnotherPacketParserCommandLine
                 ConvertResult compileResult = outputResults.First();
                 if (!compileResult.Result.Success)
                 {
-                    Console.Error.WriteLine(compileResult.Result.ErrorMessage);
+                    Console.Error.WriteLine(compileResult.Result);
                     return;
                 }
 
@@ -136,7 +131,7 @@ namespace YetAnotherPacketParserCommandLine
                     .OrderBy(result => result.Filename);
                 foreach (ConvertResult compileResult in failedResults)
                 {
-                    Console.Error.WriteLine($"{compileResult.Filename} failed to compile. Error: {compileResult.Result.ErrorMessage}");
+                    Console.Error.WriteLine($"{compileResult.Filename} failed to compile. Error(s):\n {compileResult.Result}");
                 }
             }
 

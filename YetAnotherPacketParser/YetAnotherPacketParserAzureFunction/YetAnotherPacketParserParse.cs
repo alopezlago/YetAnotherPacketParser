@@ -16,7 +16,7 @@ using YetAnotherPacketParser;
 
 namespace YetAnotherPacketParserAzureFunction
 {
-    // NOTE: If you can't publish, remove the scm restriction
+    // NOTE: If you can't publish, remove the scm restriction. This can be done from Networking | Access Restrictions
 
     public static class YetAnotherPacketParserParse
     {
@@ -75,7 +75,7 @@ namespace YetAnotherPacketParserAzureFunction
                 ConvertResult compileResult = results.First();
                 if (!compileResult.Result.Success)
                 {
-                    return GetBadRequest(compileResult.Result.ErrorMessage);
+                    return GetBadRequest(compileResult.Result.ErrorMessages);
                 }
 
                 // TODO: Should we handle the 1-packet zip file case by returning a zip?
@@ -128,11 +128,21 @@ namespace YetAnotherPacketParserAzureFunction
             return new BadRequestObjectResult(modelErrors);
         }
 
+        private static BadRequestObjectResult GetBadRequest(IEnumerable<string> errorMessages)
+        {
+            ModelStateDictionary modelErrors = new ModelStateDictionary();
+            foreach (string errorMessage in errorMessages)
+            {
+                modelErrors.AddModelError("errorMessage", errorMessage);
+            }
+
+            return new BadRequestObjectResult(modelErrors);
+        }
+
         private static IPacketConverterOptions GetOptions(HttpRequest request, ILogger log)
         {
-            int maximumLineCountBeforeNextStage;
             if (TryGetStringValueFromQuery(request, "lineTolerance", out string stringValue) &&
-                int.TryParse(stringValue, out maximumLineCountBeforeNextStage) &&
+                int.TryParse(stringValue, out int maximumLineCountBeforeNextStage) &&
                 maximumLineCountBeforeNextStage > 0)
             {
                 log.LogInformation($"Parsed tolerance: {maximumLineCountBeforeNextStage}");
@@ -167,9 +177,8 @@ namespace YetAnotherPacketParserAzureFunction
                 log.LogInformation("Using the default format");
             }
 
-            bool prettyPrint;
             if (TryGetStringValueFromQuery(request, "prettyPrint", out stringValue) &&
-                bool.TryParse(stringValue, out prettyPrint))
+                bool.TryParse(stringValue, out bool prettyPrint))
             {
                 log.LogInformation($"Parsed prettyPrint: {prettyPrint}");
             }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace YetAnotherPacketParser
 {
@@ -6,18 +7,23 @@ namespace YetAnotherPacketParser
     {
         public FailureResult(string errorMessage)
         {
-            this.ErrorMessage = errorMessage;
+            this.ErrorMessages = new List<string>() { errorMessage };
+        }
+
+        public FailureResult(IEnumerable<string> errorMessages)
+        {
+            this.ErrorMessages = errorMessages;
         }
 
         public bool Success => false;
 
-        public string ErrorMessage { get; }
+        public IEnumerable<string> ErrorMessages { get; }
 
         public T Value => throw new NotSupportedException();
 
         public override string ToString()
         {
-            return this.ErrorMessage;
+            return string.Join('\n', this.ErrorMessages);
         }
     }
 }

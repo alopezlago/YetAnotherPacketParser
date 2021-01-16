@@ -16,7 +16,7 @@
 
         public override string ToString()
         {
-            return $"[{this.Value}] {this.Text}";
+            return Strings.BonusPart(this.Value, this.Text.ToString());
         }
     }
 }

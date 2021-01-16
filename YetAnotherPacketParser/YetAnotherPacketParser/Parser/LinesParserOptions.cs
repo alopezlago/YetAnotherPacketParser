@@ -23,7 +23,7 @@ namespace YetAnotherPacketParser.Parser
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), "Value must be greater than 0");
+                    throw new ArgumentOutOfRangeException(nameof(value), Strings.ValueMustBeGreaterThanZero);
                 }
 
                 this.maximumLineCountBeforeNextStage = value;

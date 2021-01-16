@@ -50,21 +50,21 @@ namespace YetAnotherPacketParser.Lexer
             catch (ArgumentNullException ex)
             {
                 Console.Error.WriteLine(ex);
-                IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>("Unexpected null value found");
+                IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>(Strings.UnexpectedNullValue);
                 return Task.FromResult(lines);
             }
             catch (OpenXmlPackageException ex)
             {
                 Console.Error.WriteLine(ex);
                 IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>(
-                    "Unable to open the .docx file: " + ex.Message);
+                    Strings.UnableToOpenDocx(ex.Message));
                 return Task.FromResult(lines);
             }
             catch (FileFormatException ex)
             {
                 Console.Error.WriteLine(ex);
                 IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>(
-                    "Unable to open the .docx file: " + ex.Message);
+                    Strings.UnableToOpenDocx(ex.Message));
                 return Task.FromResult(lines);
             }
         }

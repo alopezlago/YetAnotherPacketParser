@@ -16,7 +16,7 @@
 
         public override string ToString()
         {
-            return $"{this.Number}. {this.Text}";
+            return Strings.NumberedQuestion(this.Number, this.Text.ToString());
         }
     }
 }
