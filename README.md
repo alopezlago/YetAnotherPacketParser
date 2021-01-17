@@ -30,7 +30,7 @@ To see the list of all flags, run
 
 YAPP comes with a C# library that is consumable through Nuget. You need to get the stream to the file and set the right compiler options, then call `PacketConverter.ConvertPackets`. For example, to convert a packet to HTML, you can use something like
 
-`
+```
 IPacketConverterOptions packetCompilerOptions = new HtmlPacketCompilerOptions()
 {
     StreamName = "packet1.html",
@@ -52,7 +52,7 @@ if (!compileResult.Result.Success)
 }
 
 File.WriteAllText(options.Output, compileResult.Result.Value);
-`
+```
 
 Note that the method can take in a zip file too, and it will return all of the packets it attempted to parse.
 
