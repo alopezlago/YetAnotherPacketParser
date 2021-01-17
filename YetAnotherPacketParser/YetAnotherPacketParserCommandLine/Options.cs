@@ -4,20 +4,14 @@ namespace YetAnotherPacketParserCommandLine
 {
     public class CommandLineOptions
     {
-        // DEFT doesn't work because their bonusese use A./B./C. for parts
-
-        // TODO: Change defaults
-        //[Option('i', "input", HelpText = "Path to the docx packet", Default = @"D:\qbsets\Fall2015\Berkeley B + MIT A.docx")]
-        [Option('i', "input", HelpText = "Path to the docx packet", Default = @"D:\qbsets\CALISTO2020\Packet 1.docx")]
-        //[Option('i', "input", HelpText = "Path to the docx packet", Default = @"D:\qbsets\CALISTO-packets-docx.zip")]
+        // Example: C\qbsets\packet1.docx
+        [Option('i', "input", HelpText = "Path to the docx packet")]
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable. This is set by a
         // default option
         public string Input { get; set; }
 
-        //[Option('o', "output", HelpText = "Path to write the translated packet to", Default = @"D:\qbsets\BerkBMitA_parsedJson.json")]
-        [Option('o', "output", HelpText = "Path to the json output", Default = @"D:\qbsets\CALISTO2020_packet1.json")]
-        //[Option('o', "output", HelpText = "Path to the json output", Default = @"D:\qbsets\BerkBMitA_parsedHtml.html")]
-        //[Option('o', "output", HelpText = "Path to the json output", Default = @"D:\qbsets\CALISTO-packets-docx-parsed.zip")]
+        // Example: C:\qbsets\packet1.json
+        [Option('o', "output", HelpText = "Path to the json output")]
         public string Output { get; set; }
 
         [Option(
@@ -27,7 +21,6 @@ namespace YetAnotherPacketParserCommandLine
                 "means that parsing will not fail if a question has a new line in it, but it may skip over or " +
                 "combine questions. Note that answers must always be on one line. The default value is 1, which " +
                 "means that all questions must be on 1 line. This value must be greater than 0.",
-            //Default = 1)]
             Default = 2)]
         public int MaximumLineCountBeforeNextStage { get; set; }
 
@@ -38,7 +31,6 @@ namespace YetAnotherPacketParserCommandLine
             'f',
             "format",
             HelpText = "Output format. The possible values are 'json' and 'html'. JSON is the default format.",
-            //Default = "html")]
             Default = "json")]
         public string OutputFormat { get; set; }
 

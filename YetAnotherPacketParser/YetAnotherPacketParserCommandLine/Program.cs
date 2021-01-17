@@ -92,10 +92,7 @@ namespace YetAnotherPacketParserCommandLine
                     return;
                 }
 
-                using (FileStream fileStream = new FileStream(options.Input, FileMode.Open, FileAccess.Read, FileShare.Read))
-                {
-                    File.WriteAllText(options.Output, compileResult.Result.Value);
-                }
+                File.WriteAllText(options.Output, compileResult.Result.Value);
             }
             else
             {

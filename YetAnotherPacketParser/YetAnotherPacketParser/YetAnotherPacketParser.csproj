@@ -5,7 +5,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Nullable>enable</Nullable>
     <AssemblyName>YetAnotherPacketParser</AssemblyName>
-    <Description>Yet Another Packet Parser parses quiz bowl packets and translates them to different formats</Description>
+    <Description>Yet Another Packet Parser parses .docx quiz bowl packets and translates them to different formats like JSON or HTML</Description>
+    <Summary>Yet Another Packet Parser parses .docx quiz bowl packets and translates them to different formats</Summary>
     <Copyright>(c) 2020 Alejandro Lopez-Lago</Copyright>
     <Authors>Alejandro Lopez-Lago</Authors>
     <Product>YAPP</Product>
@@ -13,13 +14,15 @@
     <PackageLicenseExpression></PackageLicenseExpression>
     <RepositoryUrl>https://github.com/alopezlago/YetAnotherPacketParser</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>quizbowl packetparser</PackageTags>
+    <PackageTags>quizbowl packetparser quizbowlpacketparser</PackageTags>
     <PackageProjectUrl>https://github.com/alopezlago/YetAnotherPacketParser</PackageProjectUrl>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <AssemblyVersion>0.1.1.0</AssemblyVersion>
+    <FileVersion>0.1.1.0</FileVersion>
+    <Version>0.1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="2.11.3" />
     <PackageReference Include="HtmlSanitizer" Version="5.0.343" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.0">
