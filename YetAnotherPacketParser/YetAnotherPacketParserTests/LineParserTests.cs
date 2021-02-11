@@ -155,13 +155,6 @@ namespace YetAnotherPacketParserTests
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
-            Assert.IsFalse(packetResult.Success);
-
-            parser = new LinesParser(new LinesParserOptions()
-            {
-                MaximumLineCountBeforeNextStage = 2
-            });
-            packetResult = parser.Parse(lines);
             Assert.IsTrue(packetResult.Success);
 
             PacketNode packet = packetResult.Value;
@@ -199,13 +192,6 @@ namespace YetAnotherPacketParserTests
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
-            Assert.IsFalse(packetResult.Success);
-
-            parser = new LinesParser(new LinesParserOptions()
-            {
-                MaximumLineCountBeforeNextStage = 2
-            });
-            packetResult = parser.Parse(lines);
             Assert.IsTrue(packetResult.Success);
 
             PacketNode packet = packetResult.Value;
@@ -241,6 +227,54 @@ namespace YetAnotherPacketParserTests
             IResult<PacketNode> packetResult = parser.Parse(lines);
             Assert.IsFalse(packetResult.Success);
             Assert.AreEqual(1, packetResult.ErrorMessages.Count());
+        }
+
+        [TestMethod]
+        public void BonusPartFollowedByAnotherPartWithNoAnswerFails()
+        {
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(1, "Bonus leadin"),
+                CreatePartLine("Bonus part that is", 10),
+                CreatePartLine("Skipped the last answer", 10),
+                CreateAnswerLine("The answer")
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+            Assert.AreEqual(1, packetResult.ErrorMessages.Count());
+
+            string errorMessage = packetResult.ErrorMessages.First();
+            Assert.IsTrue(
+                errorMessage.StartsWith(Strings.UnexpectedToken(LineType.Answer, LineType.BonusPart)),
+                $@"Didn't find expected error in error message ""{errorMessage}""");
+        }
+
+        [TestMethod]
+        public void BonusLeadinNotFollowedByBonusPartFails()
+        {
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(1, "Bonus leadin"),
+                CreateAnswerLine("The answer"),
+                CreatePartLine("Bonus part", 10),
+                CreateAnswerLine("The next answer")
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+            Assert.AreEqual(1, packetResult.ErrorMessages.Count());
+
+            string errorMessage = packetResult.ErrorMessages.First();
+            Assert.IsTrue(
+                errorMessage.StartsWith(Strings.UnexpectedToken(LineType.BonusPart, LineType.Answer)),
+                $@"Didn't find expected error in error message ""{errorMessage}""");
         }
 
         [TestMethod]

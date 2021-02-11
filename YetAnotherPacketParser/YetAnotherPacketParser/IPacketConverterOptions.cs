@@ -8,6 +8,7 @@ namespace YetAnotherPacketParser
 
         public OutputFormat OutputFormat { get; }
 
+        [Obsolete("No longer used")]
         public int MaximumLineCountBeforeNextStage { get; }
 
         public int MaximumPackets { get; }

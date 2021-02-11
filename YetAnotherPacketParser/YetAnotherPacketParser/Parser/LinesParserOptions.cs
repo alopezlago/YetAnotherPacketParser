@@ -10,12 +10,13 @@ namespace YetAnotherPacketParser.Parser
 
         public LinesParserOptions()
         {
-            this.MaximumLineCountBeforeNextStage = 1;
+            // this.MaximumLineCountBeforeNextStage = 1;
         }
 
         /// <summary>
         /// The number of extra lines to search for the next stage/token (like ANSWER or a bonus part value)
         /// </summary>
+        [Obsolete("This parameter is no longer used")]
         public int MaximumLineCountBeforeNextStage
         {
             get => this.maximumLineCountBeforeNextStage;

@@ -44,7 +44,7 @@ namespace YetAnotherPacketParser.Parser
 
                 List<string> errorMessages = new List<string>();
 
-                IResult<List<TossupNode>> tossupsResult = this.ParseTossups(enumerator, out bool moreLinesExist);
+                IResult<List<TossupNode>> tossupsResult = ParseTossups(enumerator, out bool moreLinesExist);
                 if (!tossupsResult.Success)
                 {
                     errorMessages.AddRange(tossupsResult.ErrorMessages);
@@ -60,7 +60,7 @@ namespace YetAnotherPacketParser.Parser
                     return new SuccessResult<PacketNode>(new PacketNode(tossupsResult.Value, bonuses: null));
                 }
 
-                IResult<List<BonusNode>> bonusesResult = this.ParseBonuses(enumerator);
+                IResult<List<BonusNode>> bonusesResult = ParseBonuses(enumerator);
                 if (!bonusesResult.Success)
                 {
                     errorMessages.AddRange(bonusesResult.ErrorMessages);
@@ -75,14 +75,42 @@ namespace YetAnotherPacketParser.Parser
             }
         }
 
-        private static bool IsEndOfLeadin(ILine line)
+        private static IResult<FormattedText> GetTextFromLines(
+            LinesEnumerator lines, string context, LineType nextExpectedLineType)
         {
-            return line.Type == LineType.BonusPart;
-        }
+            FormattedText formattedText = lines.Current.Text;
+            IEnumerable<FormattedTextSegment> formattedTextSegments = formattedText.Segments;
 
-        private static bool IsEndOfQuestion(ILine line)
-        {
-            return line.Type == LineType.Answer;
+            // The question number + question stays the same. We should do this in a loop (move next, is answer line, etc.)
+            int linesChecked = 0;
+            bool foundNextToken = false;
+            while (lines.MoveNext())
+            {
+                if (lines.Current.Type == nextExpectedLineType)
+                {
+                    foundNextToken = true;
+                    break;
+                }
+                else if (lines.Current.Type != LineType.Unclassified)
+                {
+                    return new FailureResult<FormattedText>(GetFailureMessage(
+                        lines, Strings.UnexpectedToken(nextExpectedLineType, lines.Current.Type)));
+                }
+
+                // Keep adding to the question text, since it's not done
+                formattedTextSegments = formattedTextSegments.Concat(lines.Current.Text.Segments);
+                linesChecked++;
+            }
+
+            if (!foundNextToken)
+            {
+                return new FailureResult<FormattedText>(GetFailureMessage(
+                    lines, Strings.NoMoreLinesFound(context, linesChecked + 1)));
+            }
+
+            // The question needs to be pieced together from different lines, so create a new FormattedText
+            formattedText = new FormattedText(formattedTextSegments);
+            return new SuccessResult<FormattedText>(formattedText);
         }
 
         private static string GetFailureMessage(LinesEnumerator lines, string message)
@@ -166,7 +194,7 @@ namespace YetAnotherPacketParser.Parser
             return true;
         }
 
-        private IResult<List<TossupNode>> ParseTossups(LinesEnumerator lines, out bool moreLinesExist)
+        private static IResult<List<TossupNode>> ParseTossups(LinesEnumerator lines, out bool moreLinesExist)
         {
             int currentQuestionNumber = -1;
             List<TossupNode> tossupNodes = new List<TossupNode>();
@@ -178,7 +206,7 @@ namespace YetAnotherPacketParser.Parser
             {
                 currentQuestionNumber = line.Number;
 
-                IResult<TossupNode> tossupResult = this.ParseTossup(lines, tossupNodes.Count + 1);
+                IResult<TossupNode> tossupResult = ParseTossup(lines, tossupNodes.Count + 1);
                 if (!tossupResult.Success)
                 {
                     if (errorMessages == null)
@@ -213,14 +241,14 @@ namespace YetAnotherPacketParser.Parser
             return new SuccessResult<List<TossupNode>>(tossupNodes);
         }
 
-        private IResult<List<BonusNode>> ParseBonuses(LinesEnumerator lines)
+        private static IResult<List<BonusNode>> ParseBonuses(LinesEnumerator lines)
         {
             List<BonusNode> bonusNodes = new List<BonusNode>();
             List<string>? errorMessages = null;
 
             while (TryGetNextQuestionLine(lines, out _))
             {
-                IResult<BonusNode> bonusResult = this.ParseBonus(lines, bonusNodes.Count + 1);
+                IResult<BonusNode> bonusResult = ParseBonus(lines, bonusNodes.Count + 1);
                 if (!bonusResult.Success)
                 {
                     if (errorMessages == null)
@@ -249,7 +277,7 @@ namespace YetAnotherPacketParser.Parser
             return new SuccessResult<List<BonusNode>>(bonusNodes);
         }
 
-        private IResult<TossupNode> ParseTossup(LinesEnumerator lines, int tossupNumber)
+        private static IResult<TossupNode> ParseTossup(LinesEnumerator lines, int tossupNumber)
         {
             if (!TryGetQuestionNumber(lines.Current, out int questionNumber))
             {
@@ -257,7 +285,7 @@ namespace YetAnotherPacketParser.Parser
                     lines, Strings.NoTossupQuestionNumberFound(tossupNumber)));
             }
 
-            IResult<QuestionNode> questionResult = this.ParseQuestion(lines, $"tossup #{tossupNumber}");
+            IResult<QuestionNode> questionResult = ParseQuestion(lines, $"tossup #{tossupNumber}");
             if (!questionResult.Success)
             {
                 return new FailureResult<TossupNode>(questionResult.ErrorMessages);
@@ -268,7 +296,7 @@ namespace YetAnotherPacketParser.Parser
             return new SuccessResult<TossupNode>(new TossupNode(questionNumber, questionResult.Value));
         }
 
-        private IResult<BonusNode> ParseBonus(LinesEnumerator lines, int bonusNumber)
+        private static IResult<BonusNode> ParseBonus(LinesEnumerator lines, int bonusNumber)
         {
             if (!TryGetQuestionNumber(lines.Current, out int questionNumber))
             {
@@ -276,14 +304,14 @@ namespace YetAnotherPacketParser.Parser
                     lines, Strings.NoBonusQuestionNumberFound(bonusNumber)));
             }
 
-            IResult<FormattedText> leadinResult = this.GetTextFromLines(
-                lines, $"Bonus leadin (#{bonusNumber})", IsEndOfLeadin);
+            IResult<FormattedText> leadinResult = GetTextFromLines(
+                lines, $"Bonus leadin (#{bonusNumber})", LineType.BonusPart);
             if (!leadinResult.Success)
             {
                 return new FailureResult<BonusNode>(leadinResult.ErrorMessages);
             }
 
-            IResult<List<BonusPartNode>> bonusPartsResult = this.ParseBonusParts(lines);
+            IResult<List<BonusPartNode>> bonusPartsResult = ParseBonusParts(lines);
             if (!bonusPartsResult.Success)
             {
                 return new FailureResult<BonusNode>(bonusPartsResult.ErrorMessages);
@@ -293,7 +321,7 @@ namespace YetAnotherPacketParser.Parser
                 questionNumber, leadinResult.Value, bonusPartsResult.Value, null));
         }
 
-        private IResult<List<BonusPartNode>> ParseBonusParts(LinesEnumerator lines)
+        private static IResult<List<BonusPartNode>> ParseBonusParts(LinesEnumerator lines)
         {
             List<BonusPartNode> parts = new List<BonusPartNode>();
             do
@@ -304,7 +332,7 @@ namespace YetAnotherPacketParser.Parser
                     break;
                 }
 
-                IResult<BonusPartNode> bonusPartResult = this.ParseBonusPart(lines, parts.Count + 1);
+                IResult<BonusPartNode> bonusPartResult = ParseBonusPart(lines, parts.Count + 1);
                 if (!bonusPartResult.Success)
                 {
                     return new FailureResult<List<BonusPartNode>>(bonusPartResult.ErrorMessages);
@@ -322,7 +350,7 @@ namespace YetAnotherPacketParser.Parser
             return new SuccessResult<List<BonusPartNode>>(parts);
         }
 
-        private IResult<BonusPartNode> ParseBonusPart(LinesEnumerator lines, int bonusPartNumber)
+        private static IResult<BonusPartNode> ParseBonusPart(LinesEnumerator lines, int bonusPartNumber)
         {
             // Should follow the format
             // [value] question
@@ -334,7 +362,7 @@ namespace YetAnotherPacketParser.Parser
             }
 
             int partValue = bonusPartLine.Value;
-            IResult<QuestionNode> questionResult = this.ParseQuestion(lines, $"bonus part #{bonusPartNumber}");
+            IResult<QuestionNode> questionResult = ParseQuestion(lines, $"bonus part #{bonusPartNumber}");
             if (!questionResult.Success)
             {
                 return new FailureResult<BonusPartNode>(questionResult.ErrorMessages);
@@ -343,9 +371,9 @@ namespace YetAnotherPacketParser.Parser
             return new SuccessResult<BonusPartNode>(new BonusPartNode(questionResult.Value, partValue));
         }
 
-        private IResult<QuestionNode> ParseQuestion(LinesEnumerator lines, string context)
+        private static IResult<QuestionNode> ParseQuestion(LinesEnumerator lines, string context)
         {
-            IResult<FormattedText> questionResult = this.GetTextFromLines(lines, context, IsEndOfQuestion);
+            IResult<FormattedText> questionResult = GetTextFromLines(lines, context, LineType.Answer);
             if (!questionResult.Success)
             {
                 return new FailureResult<QuestionNode>(questionResult.ErrorMessages);
@@ -364,45 +392,6 @@ namespace YetAnotherPacketParser.Parser
             // TODO: Support editor's notes. Would require changing the lexer, or having some look-behind so we can
             // see if the previous line starts with an editor's note tag
             return new SuccessResult<QuestionNode>(new QuestionNode(questionResult.Value, answer));
-        }
-
-        private IResult<FormattedText> GetTextFromLines(LinesEnumerator lines, string context, Func<ILine, bool> isEnd)
-        {
-            FormattedText formattedText = lines.Current.Text;
-            IEnumerable<FormattedTextSegment> formattedTextSegments = formattedText.Segments;
-
-            // The question number + question stays the same. We should do this in a loop (move next, is answer line, etc.)
-            int linesChecked = 0;
-            while (linesChecked < this.Options.MaximumLineCountBeforeNextStage)
-            {
-                if (!lines.MoveNext())
-                {
-                    return new FailureResult<FormattedText>(GetFailureMessage(
-                        lines, Strings.NoMoreLinesFound(context, linesChecked + 1)));
-                }
-                else if (isEnd(lines.Current))
-                {
-                    break;
-                }
-
-                // Keep adding to the question text, since it's not done
-                formattedTextSegments = formattedTextSegments.Concat(lines.Current.Text.Segments);
-                linesChecked++;
-            }
-
-            if (linesChecked >= this.Options.MaximumLineCountBeforeNextStage)
-            {
-                return new FailureResult<FormattedText>(GetFailureMessage(
-                    lines, Strings.CouldntFindNextPart(context, this.Options.MaximumLineCountBeforeNextStage)));
-            }
-
-            if (linesChecked > 0)
-            {
-                // The question needs to be pieced together from different lines, so create a new FormattedText
-                formattedText = new FormattedText(formattedTextSegments);
-            }
-
-            return new SuccessResult<FormattedText>(formattedText);
         }
 
         private class LinesEnumerator : IEnumerator<ILine>

@@ -80,6 +80,11 @@ namespace YetAnotherPacketParser
             return $"Unable to open the .docx file: {message}";
         }
 
+        public static string UnexpectedToken(LineType expected, LineType actual)
+        {
+            return $@"Unexpected line found. Was expecting a line of type ""{expected}"", but found a line of type ""{actual}""";
+        }
+
         public static string UnknownError(string errorMessage)
         {
             return $"Unknown error: {errorMessage}";
