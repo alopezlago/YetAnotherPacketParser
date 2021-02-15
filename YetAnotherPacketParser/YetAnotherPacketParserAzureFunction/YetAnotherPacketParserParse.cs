@@ -141,18 +141,6 @@ namespace YetAnotherPacketParserAzureFunction
 
         private static IPacketConverterOptions GetOptions(HttpRequest request, ILogger log)
         {
-            if (TryGetStringValueFromQuery(request, "lineTolerance", out string stringValue) &&
-                int.TryParse(stringValue, out int maximumLineCountBeforeNextStage) &&
-                maximumLineCountBeforeNextStage > 0)
-            {
-                log.LogInformation($"Parsed tolerance: {maximumLineCountBeforeNextStage}");
-            }
-            else
-            {
-                maximumLineCountBeforeNextStage = 1;
-                log.LogInformation("Using the default tolerance");
-            }
-
             OutputFormat outputFormat;
             if (TryGetStringValueFromQuery(request, "format", out string outputFormatString))
             {
@@ -177,7 +165,7 @@ namespace YetAnotherPacketParserAzureFunction
                 log.LogInformation("Using the default format");
             }
 
-            if (TryGetStringValueFromQuery(request, "prettyPrint", out stringValue) &&
+            if (TryGetStringValueFromQuery(request, "prettyPrint", out string stringValue) &&
                 bool.TryParse(stringValue, out bool prettyPrint))
             {
                 log.LogInformation($"Parsed prettyPrint: {prettyPrint}");
@@ -195,7 +183,6 @@ namespace YetAnotherPacketParserAzureFunction
                     return new HtmlPacketCompilerOptions()
                     {
                         StreamName = "Request",
-                        MaximumLineCountBeforeNextStage = maximumLineCountBeforeNextStage,
                         MaximumPackets = MaximumPackets,
                         MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
                         Log = logMessage
@@ -206,7 +193,6 @@ namespace YetAnotherPacketParserAzureFunction
                     {
                         StreamName = "Request",
                         PrettyPrint = prettyPrint,
-                        MaximumLineCountBeforeNextStage = maximumLineCountBeforeNextStage,
                         MaximumPackets = MaximumPackets,
                         MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
                         Log = logMessage
@@ -218,7 +204,6 @@ namespace YetAnotherPacketParserAzureFunction
                     {
                         StreamName = "Request",
                         PrettyPrint = prettyPrint,
-                        MaximumLineCountBeforeNextStage = maximumLineCountBeforeNextStage,
                         MaximumPackets = MaximumPackets,
                         MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
                         Log = logMessage

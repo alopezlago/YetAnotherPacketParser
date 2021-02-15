@@ -7,7 +7,6 @@ namespace YetAnotherPacketParser
         public HtmlPacketCompilerOptions()
         {
             this.StreamName = string.Empty;
-            this.MaximumLineCountBeforeNextStage = 1;
             this.MaximumPackets = 1000;
             this.MaximumPacketSizeInBytes = 1 * 1024 * 1024; // 1 MB
         }
@@ -16,6 +15,7 @@ namespace YetAnotherPacketParser
 
         public OutputFormat OutputFormat => OutputFormat.Html;
 
+        [Obsolete("No longer used")]
         public int MaximumLineCountBeforeNextStage { get; set; }
 
         public int MaximumPackets { get; set; }

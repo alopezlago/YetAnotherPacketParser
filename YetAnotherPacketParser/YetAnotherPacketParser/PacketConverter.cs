@@ -133,7 +133,6 @@ namespace YetAnotherPacketParser
 
             LinesParserOptions parserOptions = new LinesParserOptions()
             {
-                MaximumLineCountBeforeNextStage = options.MaximumLineCountBeforeNextStage
             };
             LinesParser parser = new LinesParser(parserOptions);
             IResult<PacketNode> packetNodeResult = parser.Parse(linesResult.Value);

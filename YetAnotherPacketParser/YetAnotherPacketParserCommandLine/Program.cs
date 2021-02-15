@@ -53,7 +53,6 @@ namespace YetAnotherPacketParserCommandLine
                     packetCompilerOptions = new JsonPacketCompilerOptions()
                     {
                         StreamName = options.Input,
-                        MaximumLineCountBeforeNextStage = options.MaximumLineCountBeforeNextStage,
                         PrettyPrint = options.PrettyPrint,
                         Log = log
                     };
@@ -62,7 +61,6 @@ namespace YetAnotherPacketParserCommandLine
                     packetCompilerOptions = new HtmlPacketCompilerOptions()
                     {
                         StreamName = options.Input,
-                        MaximumLineCountBeforeNextStage = options.MaximumLineCountBeforeNextStage,
                         Log = log
                     };
                     break;
