@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -47,19 +46,6 @@ namespace YetAnotherPacketParser.Compiler.Json
                 {
                     return await writer.ReadToEndAsync().ConfigureAwait(false);
                 }
-            }
-        }
-
-        private class PascalCaseJsonNamingPolicy : JsonNamingPolicy
-        {
-            [SuppressMessage(
-                "Globalization",
-                "CA1308:Normalize strings to uppercase",
-                Justification = "Pascal case requires lowercasing strings")]
-            public override string ConvertName(string name)
-            {
-                // Names will not be null or empty
-                return name.Substring(0, 1).ToLowerInvariant() + name.Substring(1);
             }
         }
     }

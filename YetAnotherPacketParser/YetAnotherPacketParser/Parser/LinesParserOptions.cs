@@ -6,11 +6,8 @@ namespace YetAnotherPacketParser.Parser
     {
         public static readonly LinesParserOptions Default = new LinesParserOptions();
 
-        private int maximumLineCountBeforeNextStage;
-
         public LinesParserOptions()
         {
-            // this.MaximumLineCountBeforeNextStage = 1;
         }
 
         /// <summary>
@@ -19,16 +16,8 @@ namespace YetAnotherPacketParser.Parser
         [Obsolete("This parameter is no longer used")]
         public int MaximumLineCountBeforeNextStage
         {
-            get => this.maximumLineCountBeforeNextStage;
-            set
-            {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), Strings.ValueMustBeGreaterThanZero);
-                }
-
-                this.maximumLineCountBeforeNextStage = value;
-            }
+            get;
+            set;
         }
     }
 }

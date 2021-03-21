@@ -8,11 +8,15 @@ namespace YetAnotherPacketParser.Compiler.Json
     // in-between
     internal class JsonPacketNode
     {
-        public JsonPacketNode(PacketNode node)
+        // For parsing for tests, when we get to it
+        public JsonPacketNode() 
+        {
+            this.Tossups = new List<JsonTossupNode>();
+        }
+
+        public JsonPacketNode(PacketNode node) : this()
         {
             Verify.IsNotNull(node, nameof(node));
-
-            this.Tossups = new List<JsonTossupNode>();
 
             foreach (TossupNode tossupNode in node.Tossups)
             {
