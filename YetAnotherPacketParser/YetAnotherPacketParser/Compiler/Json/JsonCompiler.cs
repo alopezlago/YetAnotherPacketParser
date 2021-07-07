@@ -33,7 +33,8 @@ namespace YetAnotherPacketParser.Compiler.Json
                 {
                     AllowTrailingCommas = true,
                     PropertyNamingPolicy = new PascalCaseJsonNamingPolicy(),
-                    WriteIndented = this.Options.PrettyPrint
+                    WriteIndented = this.Options.PrettyPrint,
+                    IgnoreNullValues = true
                 };
 
                 // TODO: If we decide to host this directly in an ASP.Net context, remove ConfigureAwait calls

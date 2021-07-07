@@ -91,7 +91,7 @@ namespace YetAnotherPacketParser.Compiler
         private BonusPartNode SanitizeBonusPart(BonusPartNode node)
         {
             QuestionNode sanitizedQuestion = this.SanitizeQuestion(node.Question);
-            return new BonusPartNode(sanitizedQuestion, node.Value);
+            return new BonusPartNode(sanitizedQuestion, node.Value, node.DifficultyModifier);
         }
 
         private QuestionNode SanitizeQuestion(QuestionNode node)
