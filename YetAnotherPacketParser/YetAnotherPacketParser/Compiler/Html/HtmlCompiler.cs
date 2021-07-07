@@ -69,6 +69,7 @@ namespace YetAnotherPacketParser.Compiler.Html
         {
             builder.Append('[');
             builder.Append(bonusPart.Value);
+            builder.Append(bonusPart.DifficultyModifier);
             builder.Append("] ");
             WriteQuestion(bonusPart.Question, builder);
         }

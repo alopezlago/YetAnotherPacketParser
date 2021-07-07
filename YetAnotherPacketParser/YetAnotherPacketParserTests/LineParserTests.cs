@@ -297,6 +297,32 @@ namespace YetAnotherPacketParserTests
         }
 
         [TestMethod]
+        public void BonusPartWithDifficultyModifierSucceeds()
+        {
+            const char modifier = 'h';
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(1, "Bonus leadin"),
+                CreatePartLine("Bonus part that is", 10, modifier),
+                CreateAnswerLine("The answer")
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsTrue(packetResult.Success);
+            Assert.IsNotNull(packetResult.Value.Bonuses);
+            Assert.AreEqual(1, packetResult.Value.Bonuses?.Count(), "Unexpected number of bonuses");
+
+            BonusNode bonus = packetResult.Value.Bonuses.First();
+            Assert.AreEqual(1, bonus.Parts.Count(), "Unexpected number of parts");
+
+            BonusPartNode bonusPart = bonus.Parts.First();
+            Assert.AreEqual(modifier, bonusPart.DifficultyModifier);
+        }
+
+        [TestMethod]
         public void TossupWithNoAnswerFails()
         {
             ILine[] lines = new ILine[]
@@ -414,9 +440,9 @@ namespace YetAnotherPacketParserTests
             return new FormattedText(new FormattedTextSegment[] { new FormattedTextSegment(text) });
         }
 
-        private static BonusPartLine CreatePartLine(string text, int partValue)
+        private static BonusPartLine CreatePartLine(string text, int partValue, char? difficultyModifier = null)
         {
-            return new BonusPartLine(CreateFormattedText(text), partValue);
+            return new BonusPartLine(CreateFormattedText(text), partValue, difficultyModifier);
         }
 
         private static NumberedQuestionLine CreateQuestionLine(int number, string text)

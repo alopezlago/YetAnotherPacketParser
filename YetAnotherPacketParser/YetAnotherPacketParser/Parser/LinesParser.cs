@@ -368,7 +368,8 @@ namespace YetAnotherPacketParser.Parser
                 return new FailureResult<BonusPartNode>(questionResult.ErrorMessages);
             }
 
-            return new SuccessResult<BonusPartNode>(new BonusPartNode(questionResult.Value, partValue));
+            return new SuccessResult<BonusPartNode>(
+                new BonusPartNode(questionResult.Value, partValue, bonusPartLine.DifficultyModifier));
         }
 
         private static IResult<QuestionNode> ParseQuestion(LinesEnumerator lines, string context)

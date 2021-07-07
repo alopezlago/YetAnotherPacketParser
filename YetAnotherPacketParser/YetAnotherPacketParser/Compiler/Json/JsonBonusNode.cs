@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using YetAnotherPacketParser.Ast;
 
 namespace YetAnotherPacketParser.Compiler.Json
@@ -16,6 +17,9 @@ namespace YetAnotherPacketParser.Compiler.Json
             this.Parts = new List<string>();
             this.Parts_sanitized = new List<string>();
             this.Values = new List<int>();
+
+            this.DifficultModifiers = partNodes.Any(node => node.DifficultyModifier.HasValue) ? new List<char?>() : null;
+
             foreach (BonusPartNode partNode in partNodes)
             {
                 this.Answers.Add(JsonTextFormatter.ToStringWithTags(partNode.Question.Answer));
@@ -23,6 +27,8 @@ namespace YetAnotherPacketParser.Compiler.Json
                 this.Parts.Add(JsonTextFormatter.ToStringWithTags(partNode.Question.Question));
                 this.Parts_sanitized.Add(JsonTextFormatter.ToStringWithoutTags(partNode.Question.Question));
                 this.Values.Add(partNode.Value);
+
+                this.DifficultModifiers?.Add(partNode.DifficultyModifier);
             }
         }
 
@@ -39,5 +45,7 @@ namespace YetAnotherPacketParser.Compiler.Json
         public ICollection<string> Parts_sanitized { get; }
 
         public ICollection<int> Values { get; }
+
+        public ICollection<char?>? DifficultModifiers { get; }
     }
 }
