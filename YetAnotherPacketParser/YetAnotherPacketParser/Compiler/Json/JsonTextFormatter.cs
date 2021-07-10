@@ -21,20 +21,16 @@ namespace YetAnotherPacketParser.Compiler.Json
             StringBuilder builder = new StringBuilder();
             foreach (FormattedTextSegment segment in node.Segments)
             {
-                // We only track <req> and <em>. <req> is a combination of bold and underlined.
                 if (previousBolded ^ segment.Bolded)
                 {
-                    if (previousUnderlined ^ segment.Underlined)
-                    {
-                        builder.Append(segment.Bolded ? "<req>" : "</req>");
-                        previousUnderlined = segment.Underlined;
-                    }
-                    else
-                    {
-                        builder.Append(segment.Bolded ? "<b>" : "</b>");
-                    }
-
+                    builder.Append(segment.Bolded ? "<b>" : "</b>");
                     previousBolded = segment.Bolded;
+                }
+
+                if (previousUnderlined ^ segment.Underlined)
+                {
+                    builder.Append(segment.Underlined ? "<u>" : "</u>");
+                    previousUnderlined = segment.Underlined;
                 }
 
                 if (previousItalic ^ segment.Italic)
@@ -47,9 +43,14 @@ namespace YetAnotherPacketParser.Compiler.Json
             }
 
             // Close any remaining tags
-            if (previousBolded || previousUnderlined)
+            if (previousBolded)
             {
-                builder.Append("</req>");
+                builder.Append("</b>");
+            }
+
+            if (previousUnderlined)
+            {
+                builder.Append("</u>");
             }
 
             if (previousItalic)
