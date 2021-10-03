@@ -9,6 +9,7 @@ namespace YetAnotherPacketParser
             this.StreamName = string.Empty;
             this.MaximumPackets = 1000;
             this.MaximumPacketSizeInBytes = 1 * 1024 * 1024; // 1 MB
+            this.ModaqFormat = false;
             this.PrettyPrint = true;
         }
 
@@ -22,6 +23,9 @@ namespace YetAnotherPacketParser
         public int MaximumPackets { get; set; }
 
         public int MaximumPacketSizeInBytes { get; set; }
+
+        // Only emit the fields MODAQ uses, e.g. remove all the *_sanitized fields
+        public bool ModaqFormat { get; set; }
 
         public bool PrettyPrint { get; set; }
 

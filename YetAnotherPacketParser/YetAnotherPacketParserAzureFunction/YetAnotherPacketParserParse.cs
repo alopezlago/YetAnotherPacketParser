@@ -176,7 +176,17 @@ namespace YetAnotherPacketParserAzureFunction
                 log.LogInformation("Using the default pretty print setting");
             }
 
-            Action<YetAnotherPacketParser.LogLevel, string> logMessage = (logLevel, message) => Log(log, logLevel, message);
+            if (TryGetStringValueFromQuery(request, "modaq", out string modaqValue) &&
+                bool.TryParse(modaqValue, out bool modaqFormat))
+            {
+                log.LogInformation($"Parsed MODAQ formatted: {modaqFormat}");
+            }
+            else
+            {
+                modaqFormat = false;
+            }
+
+    Action<YetAnotherPacketParser.LogLevel, string> logMessage = (logLevel, message) => Log(log, logLevel, message);
             switch (outputFormat)
             {
                 case OutputFormat.Html:
@@ -195,6 +205,7 @@ namespace YetAnotherPacketParserAzureFunction
                         PrettyPrint = prettyPrint,
                         MaximumPackets = MaximumPackets,
                         MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
+                        ModaqFormat = modaqFormat,
                         Log = logMessage
                     };
                 default:

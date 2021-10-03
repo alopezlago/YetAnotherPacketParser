@@ -54,7 +54,8 @@ namespace YetAnotherPacketParserCommandLine
                     {
                         StreamName = options.Input,
                         PrettyPrint = options.PrettyPrint,
-                        Log = log
+                        Log = log,
+                        ModaqFormat = options.ForModaq
                     };
                     break;
                 case "HTML":
