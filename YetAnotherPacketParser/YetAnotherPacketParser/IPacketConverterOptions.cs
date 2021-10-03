@@ -15,6 +15,8 @@ namespace YetAnotherPacketParser
 
         public int MaximumPacketSizeInBytes { get; }
 
+        public bool ModaqFormat { get; }
+
         public bool PrettyPrint { get; }
 
         public Action<LogLevel, string>? Log { get; }

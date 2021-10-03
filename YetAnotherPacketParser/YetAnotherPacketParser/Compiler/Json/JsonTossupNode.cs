@@ -4,13 +4,17 @@ namespace YetAnotherPacketParser.Compiler.Json
 {
     internal class JsonTossupNode
     {
-        public JsonTossupNode(TossupNode node)
+        public JsonTossupNode(TossupNode node, bool includeSanitizedFields)
         {
             this.Number = node.Number;
             this.Question = JsonTextFormatter.ToStringWithTags(node.Question.Question);
-            this.Question_sanitized = JsonTextFormatter.ToStringWithoutTags(node.Question.Question);
+            this.Question_sanitized = includeSanitizedFields ?
+                JsonTextFormatter.ToStringWithoutTags(node.Question.Question) :
+                null;
             this.Answer = JsonTextFormatter.ToStringWithTags(node.Question.Answer);
-            this.Answer_sanitized = JsonTextFormatter.ToStringWithoutTags(node.Question.Answer);
+            this.Answer_sanitized = includeSanitizedFields ?
+                JsonTextFormatter.ToStringWithoutTags(node.Question.Answer) :
+                null;
         }
 
         public int Number { get; }
@@ -20,8 +24,8 @@ namespace YetAnotherPacketParser.Compiler.Json
         public string Answer { get; }
 
         // We name it _sanitized so the Json property name converter uses the right casing
-        public string Question_sanitized { get; }
+        public string? Question_sanitized { get; }
 
-        public string Answer_sanitized { get; }
+        public string? Answer_sanitized { get; }
     }
 }

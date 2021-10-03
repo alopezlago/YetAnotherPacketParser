@@ -157,7 +157,8 @@ namespace YetAnotherPacketParser
                 case OutputFormat.Json:
                     JsonCompilerOptions compilerOptions = new JsonCompilerOptions()
                     {
-                        PrettyPrint = options.PrettyPrint
+                        PrettyPrint = options.PrettyPrint,
+                        ModaqFormat = options.ModaqFormat
                     };
                     JsonCompiler compiler = new JsonCompiler(compilerOptions);
                     outputContents = await compiler.CompileAsync(packetNode).ConfigureAwait(false);

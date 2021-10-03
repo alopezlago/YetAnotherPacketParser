@@ -24,6 +24,14 @@ namespace YetAnotherPacketParserCommandLine
             Default = "json")]
         public string OutputFormat { get; set; }
 
+        [Option(
+            'm',
+            "modaq",
+            HelpText = "When outputting to JSON, emit only fields used by MODAQ. Defaults to false.",
+            Required = false,
+            Default = false)]
+        public bool ForModaq { get; set; }
+
         [Option('v', "verbose", HelpText = "Verbose logging", Required = false, Default = false)]
         public bool Verbose { get; set; }
 #pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
