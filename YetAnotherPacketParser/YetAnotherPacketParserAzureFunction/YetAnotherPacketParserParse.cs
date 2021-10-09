@@ -186,7 +186,7 @@ namespace YetAnotherPacketParserAzureFunction
                 modaqFormat = false;
             }
 
-    Action<YetAnotherPacketParser.LogLevel, string> logMessage = (logLevel, message) => Log(log, logLevel, message);
+            Action<YetAnotherPacketParser.LogLevel, string> logMessage = (logLevel, message) => Log(log, logLevel, message);
             switch (outputFormat)
             {
                 case OutputFormat.Html:

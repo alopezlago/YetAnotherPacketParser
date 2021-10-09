@@ -32,8 +32,20 @@ namespace YetAnotherPacketParser
             Verify.IsNotNull(options, nameof(options));
             Verify.IsNotNull(stream, nameof(stream));
 
+            Tuple<bool, Stream> readStreamResult = await MagicWordDetector.IsZipFile(stream);
+            stream = readStreamResult.Item2;
+
             try
             {
+                if (!readStreamResult.Item1)
+                {
+                    // Assume it's HTML for now, and refactor if we need to support more input formats
+                    return new ConvertResult[]
+                    {
+                        await CompilePacketAsync(options.StreamName, stream, options, FileType.Html)
+                    };
+                }
+
                 using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
                 {
                     bool hasWordDocumentBody = archive.Entries
@@ -41,7 +53,7 @@ namespace YetAnotherPacketParser
                     if (hasWordDocumentBody && !archive.Entries
                         .Any(entry => entry.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)))
                     {
-                        ConvertResult result = await CompilePacketAsync(options.StreamName, stream, options)
+                        ConvertResult result = await CompilePacketAsync(options.StreamName, stream, options, FileType.Docx)
                             .ConfigureAwait(false);
                         return new ConvertResult[] { result };
                     }
@@ -66,9 +78,21 @@ namespace YetAnotherPacketParser
                             Strings.DocumentTooLarge(largeEntry.Name, maxLengthInMB));
                     }
 
-                    ConvertResult[] compileResults = await Task.WhenAll(
-                        docxEntries.Select(entry => CompilePacketAsync(entry.Name, entry.Open(), options)))
-                        .ConfigureAwait(false);
+                    // Unfortunately, ZipArchiveEntry.Open/CopyToAsync isn't thread-safe, and you'll get unexpected
+                    // errors when using Task.WhenAll, so we have to do this serially
+                    List<ConvertResult> compileResults = new List<ConvertResult>();
+                    foreach (ZipArchiveEntry entry in docxEntries)
+                    {
+                        using (Stream entryStream = entry.Open())
+                        {
+                            Tuple<bool, Stream> streamResult = await MagicWordDetector.IsZipFile(entryStream).ConfigureAwait(false);
+                            compileResults.Add(await CompilePacketAsync(
+                                entry.Name,
+                                streamResult.Item2,
+                                options,
+                                streamResult.Item1 ? FileType.Docx : FileType.Html).ConfigureAwait(false));
+                        }
+                    }
 
                     return compileResults;
                 }
@@ -100,7 +124,7 @@ namespace YetAnotherPacketParser
         }
 
         private static async Task<ConvertResult> CompilePacketAsync(
-            string packetName, Stream packetStream, IPacketConverterOptions options)
+            string packetName, Stream packetStream, IPacketConverterOptions options, FileType fileType)
         {
             // Compilers generally have four stages
             // 1. Lex/tokenize: get the tokens from the document. In the case of quiz bowl packets, tokens are the
@@ -118,7 +142,7 @@ namespace YetAnotherPacketParser
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            DocxLexer lexer = new DocxLexer();
+            ILexer lexer = fileType == FileType.Docx ? (ILexer)new DocxLexer() : (ILexer)new HtmlLexer();
             IResult<IEnumerable<ILine>> linesResult = await lexer.GetLines(packetStream).ConfigureAwait(false);
 
             long timeInMsLines = stopwatch.ElapsedMilliseconds;
@@ -188,6 +212,12 @@ namespace YetAnotherPacketParser
                 $"{packetName}: Lex {timeInMsLines}ms, Parse {timeInMsParse}ms, Compile {timeInMsCompile}ms. Total: {totalTimeMs}ms ");
 
             return new ConvertResult(packetName, new SuccessResult<string>(outputContents));
+        }
+
+        private enum FileType
+        {
+            Docx,
+            Html
         }
     }
 }
