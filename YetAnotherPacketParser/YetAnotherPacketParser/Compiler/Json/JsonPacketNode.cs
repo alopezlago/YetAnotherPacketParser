@@ -9,7 +9,7 @@ namespace YetAnotherPacketParser.Compiler.Json
     internal class JsonPacketNode
     {
         // For parsing for tests, when we get to it
-        public JsonPacketNode() 
+        public JsonPacketNode()
         {
             this.Tossups = new List<JsonTossupNode>();
         }

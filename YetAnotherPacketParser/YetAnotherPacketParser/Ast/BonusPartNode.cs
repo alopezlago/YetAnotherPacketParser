@@ -15,6 +15,6 @@ namespace YetAnotherPacketParser.Ast
 
         public int Value { get; }
 
-        public char? DifficultyModifier { get;  }
+        public char? DifficultyModifier { get; }
     }
 }

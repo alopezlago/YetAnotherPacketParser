@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -19,15 +18,6 @@ namespace YetAnotherPacketParser.Lexer
         {
             MaxCharactersInPart = MaximumCharactersInPart
         };
-
-        // Include spaces after the start tag so we get all of the spaces in a match, and we can avoid having to trim
-        // them manually.
-        private static readonly Regex AnswerRegEx = new Regex(
-            "^\\s*ANS(WER)?\\s*(:|\\.)\\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex QuestionDigitRegEx = new Regex(
-            "^\\s*(\\d+|tb|tie(breaker)?)\\s*\\.\\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex BonusPartValueRegex = new Regex(
-            "^\\s*\\[\\s*(\\d)+\\s*[ehm]?\\s*\\]\\s*", RegexOptions.Compiled);
 
         /// <summary>
         /// Gets the lines from the .docx file, with metadata indicating what type of line it is.
@@ -213,7 +203,7 @@ namespace YetAnotherPacketParser.Lexer
 
                     string unformattedText = formattedText.UnformattedText;
                     ILine line;
-                    if (TextStartsWithQuestionDigit(
+                    if (LexerClassifier.TextStartsWithQuestionDigit(
                         unformattedText, out string? matchValue, out int? parsedQuestionNumber))
                     {
                         int questionNumber = 0;
@@ -239,11 +229,12 @@ namespace YetAnotherPacketParser.Lexer
                         line = new NumberedQuestionLine(formattedText.Substring(matchValue.Length), currentQuestionNumber);
                         currentQuestionNumber++;
                     }
-                    else if (TextStartsWithAnswer(unformattedText, out matchValue))
+                    else if (LexerClassifier.TextStartsWithAnswer(unformattedText, out matchValue))
                     {
                         line = new AnswerLine(formattedText.Substring(matchValue.Length));
                     }
-                    else if (TextStartsWithBonsuPart(unformattedText, out matchValue, out int? partValue, out char? difficultyModifier) &&
+                    else if (LexerClassifier.TextStartsWithBonsuPart(
+                        unformattedText, out matchValue, out int? partValue, out char? difficultyModifier) &&
                         partValue != null)
                     {
                         line = new BonusPartLine(formattedText.Substring(matchValue.Length), partValue.Value, difficultyModifier);
@@ -258,76 +249,6 @@ namespace YetAnotherPacketParser.Lexer
             }
 
             return lines;
-        }
-
-        private static bool TextStartsWithQuestionDigit(string text, out string matchValue, out int? number)
-        {
-            number = null;
-            Match match = QuestionDigitRegEx.Match(text);
-            if (!match.Success)
-            {
-                matchValue = string.Empty;
-                number = null;
-                return false;
-            }
-
-            matchValue = match.Value;
-            if (int.TryParse(match.Value.Replace(".", string.Empty, StringComparison.Ordinal), out int parsedNumber))
-            {
-                // We could be at a tiebreaker, so don't fail if we can't find the number
-                number = parsedNumber;
-            }
-
-            return true;
-        }
-
-        private static bool TextStartsWithAnswer(string text, out string matchValue)
-        {
-            Match match = AnswerRegEx.Match(text);
-            if (!match.Success)
-            {
-                matchValue = string.Empty;
-                return false;
-            }
-
-            matchValue = match.Value;
-            return true;
-        }
-
-        private static bool TextStartsWithBonsuPart(
-            string text, out string matchValue, out int? partValue, out char? difficultyModifier)
-        {
-            partValue = null;
-            difficultyModifier = null;
-            Match match = BonusPartValueRegex.Match(text);
-            if (!match.Success)
-            {
-                matchValue = string.Empty;
-                return false;
-            }
-
-            matchValue = match.Value;
-            string partValueText = match.Value
-                .Replace("[", string.Empty, StringComparison.Ordinal)
-                .Replace("]", string.Empty, StringComparison.Ordinal)
-                .Trim();
-
-
-            // If there's a difficulty modifier at the last character, include it. It's optional.
-            char lastLetter = partValueText[^1];
-            if (char.IsLetter(lastLetter))
-            {
-                difficultyModifier = lastLetter;
-                partValueText = partValueText.Substring(0, partValueText.Length - 1);
-            }
-
-            if (!int.TryParse(partValueText, out int value))
-            {
-                return false;
-            }
-
-            partValue = value;
-            return true;
         }
 
         /// <summary>

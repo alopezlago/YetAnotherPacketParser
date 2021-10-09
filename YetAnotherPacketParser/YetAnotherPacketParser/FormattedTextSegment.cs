@@ -28,5 +28,26 @@ namespace YetAnotherPacketParser
             string propertiesString = $"{boldedString}{italicString}{underlinedString}".Trim();
             return $"({propertiesString}) {this.Text}";
         }
+
+        public override bool Equals(object? obj)
+        {
+            if (!(obj is FormattedTextSegment other))
+            {
+                return false;
+            }
+
+            return this.Text == other.Text &&
+                this.Bolded == other.Bolded &&
+                this.Italic == other.Italic &&
+                this.Underlined == other.Underlined;
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Text?.GetHashCode() ?? 0) ^
+                this.Bolded.GetHashCode() ^
+                (this.Italic.GetHashCode() << 1) ^
+                (this.Underlined.GetHashCode() << 2);
+        }
     }
 }
