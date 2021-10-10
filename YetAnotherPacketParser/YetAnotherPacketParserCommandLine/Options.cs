@@ -6,8 +6,6 @@ namespace YetAnotherPacketParserCommandLine
     {
         // Example: C\qbsets\packet1.docx
         [Option('i', "input", HelpText = "Path to the docx packet")]
-#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable. This is set by a
-        // default option
         public string Input { get; set; }
 
         // Example: C:\qbsets\packet1.json
@@ -34,6 +32,5 @@ namespace YetAnotherPacketParserCommandLine
 
         [Option('v', "verbose", HelpText = "Verbose logging", Required = false, Default = false)]
         public bool Verbose { get; set; }
-#pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
     }
 }

@@ -10,6 +10,7 @@ namespace YetAnotherPacketParser
         public const string CannotParseEmptyPacket = "Cannot parse empty packet.";
         public const string CouldntFindBonusPartValue = "Failed to parse bonus part. Couldn't find the part's value.";
         public const string CouldntFindBonusPartValueInFirstBlock = "Failed to parse bonus parts. Couldn't find the part's value in the first block of text.";
+        public const string HtmlFileNeedsBodyElement = "HTML file needs a <body> element.";
         public const string LexingError = "Lexing Error.";
         public const string NoTossupsFound = "Failed to parse tossups. No tossups found.";
         public const string Null = "<null>";

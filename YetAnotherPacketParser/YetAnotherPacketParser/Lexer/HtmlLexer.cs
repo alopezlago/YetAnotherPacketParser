@@ -20,8 +20,13 @@ namespace YetAnotherPacketParser.Lexer
             {
                 BrowsingContext context = new BrowsingContext(Configuration.Default);
                 IDocument document = await context.OpenAsync((request) => request.Content(stream));
+                IHtmlElement? body = document.Body;
+                if (body == null)
+                {
+                    return new FailureResult<IEnumerable<ILine>>(Strings.HtmlFileNeedsBodyElement);
+                }
 
-                IList<FormattedText> textLines = this.GetTextLines(document.Body);
+                IList<FormattedText> textLines = this.GetTextLines(body);
                 return ClassifyLines(textLines);
             }
             catch (Exception ex)
