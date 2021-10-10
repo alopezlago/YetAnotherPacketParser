@@ -3,7 +3,7 @@
 ## Introduction
 
 Yet Another Packet Parser (YAPP) is a parser for quiz bowl packets written in C#. Some of its features are
-- Converts packets in a docx file to HTML and JSON
+- Converts packets in a docx or HTML file to JSON or HTML
 - Can convert each packet in a zip file
 - Specific error messages that give a line number and text near where the parser failed
 - Configurable in how many lines to look ahead, which lets the parser successfully parse packets where some questions are split between multiple lines
@@ -34,7 +34,6 @@ YAPP comes with a C# library that is consumable through Nuget. You need to get t
 IPacketConverterOptions packetCompilerOptions = new HtmlPacketCompilerOptions()
 {
     StreamName = "packet1.html",
-    MaximumLineCountBeforeNextStage = options.MaximumLineCountBeforeNextStage,
     PrettyPrint = options.PrettyPrint
 };
 

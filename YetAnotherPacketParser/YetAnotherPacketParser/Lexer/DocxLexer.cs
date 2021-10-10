@@ -34,7 +34,14 @@ namespace YetAnotherPacketParser.Lexer
                 using (WordprocessingDocument document = WordprocessingDocument.Open(
                     stream, isEditable: false, openSettings: DocOpenSettings))
                 {
-                    Body body = document.MainDocumentPart.Document.Body;
+                    Body? body = document.MainDocumentPart?.Document.Body;
+                    if (body == null)
+                    {
+                        IResult<IEnumerable<ILine>> nullBodyLines = new FailureResult<IEnumerable<ILine>>(
+                            Strings.UnableToOpenDocx("Couldn't find the body of the document."));
+                        return Task.FromResult(nullBodyLines);
+                    }
+
                     IResult<IEnumerable<ILine>> lines = new SuccessResult<IEnumerable<ILine>>(GetLinesFromBody(body));
                     return Task.FromResult(lines);
                 }
@@ -174,9 +181,14 @@ namespace YetAnotherPacketParser.Lexer
 
                     currentSegment.Append(textBlock.Text);
 
-                    if (textBlock.NumberingId != null)
+                    NumberingId? numberingId = textBlock.NumberingId;
+#pragma warning disable CS8604 // Possible null reference argument. numberingId is already verified as not null, and != null doesn't mean Val is assigned null
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+                    if (numberingId != null && numberingId.Val != null)
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning restore CS8604 // Possible null reference argument.
                     {
-                        currentNumberingId = textBlock.NumberingId.Val;
+                        currentNumberingId = numberingId.Val;
                     }
                 }
 
