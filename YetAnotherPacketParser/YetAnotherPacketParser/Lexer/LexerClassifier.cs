@@ -13,6 +13,8 @@ namespace YetAnotherPacketParser.Lexer
             "^\\s*(\\d+|tb|tie(breaker)?)\\s*\\.\\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex BonusPartValueRegex = new Regex(
             "^\\s*\\[\\s*(\\d)+\\s*[ehm]?\\s*\\]\\s*", RegexOptions.Compiled);
+        private static readonly Regex PostQuestionMetadataRegex = new Regex(
+            "^\\s*<(\\w|\\d|\\s|-|:|,)+(,(\\w|\\d|\\s|-|:|,)+)?>\\s*", RegexOptions.Compiled);
 
         public static bool TextStartsWithQuestionDigit(string text, out string matchValue, out int? number)
         {
@@ -82,6 +84,11 @@ namespace YetAnotherPacketParser.Lexer
 
             partValue = value;
             return true;
+        }
+
+        public static bool TextStartsWithPostQuestionMetadata(string text)
+        {
+            return PostQuestionMetadataRegex.Match(text).Success;
         }
     }
 }

@@ -55,11 +55,12 @@ namespace YetAnotherPacketParser.Compiler
         private TossupNode SanitizeTossup(TossupNode node)
         {
             QuestionNode sanitizedQuestion = this.SanitizeQuestion(node.Question);
-            string? sanitizedEditorNotes = node.EditorsNote == null ?
+            // We want to escape rather just Sanitize
+            string? sanitizedMetadata = node.Metadata == null ?
                 null :
-                this.Sanitizer.Sanitize(node.EditorsNote);
+                this.Sanitizer.Sanitize(node.Metadata.Replace("<", "&lt;").Replace(">", "&gt;"));
 
-            return new TossupNode(node.Number, sanitizedQuestion, sanitizedEditorNotes);
+            return new TossupNode(node.Number, sanitizedQuestion, sanitizedMetadata);
         }
 
         private List<BonusNode> SanitizeBonuses(IEnumerable<BonusNode> bonuses)
@@ -81,11 +82,11 @@ namespace YetAnotherPacketParser.Compiler
             {
                 sanitizedBonusParts.Add(this.SanitizeBonusPart(bonusPart));
             }
-            string? sanitizedEditorNotes = node.EditorsNote != null ?
-                this.Sanitizer.Sanitize(node.EditorsNote) :
+            string? sanitizedMetadata = node.Metadata != null ?
+                this.Sanitizer.Sanitize(node.Metadata.Replace("<", "&lt;").Replace(">", "&gt;")) :
                 null;
 
-            return new BonusNode(node.Number, sanitizedLeadin, sanitizedBonusParts, sanitizedEditorNotes);
+            return new BonusNode(node.Number, sanitizedLeadin, sanitizedBonusParts, sanitizedMetadata);
         }
 
         private BonusPartNode SanitizeBonusPart(BonusPartNode node)

@@ -81,6 +81,11 @@ namespace YetAnotherPacketParser.Parser
             FormattedText formattedText = lines.Current.Text;
             IEnumerable<FormattedTextSegment> formattedTextSegments = formattedText.Segments;
 
+            if (lines.Current.Type == nextExpectedLineType)
+            {
+                return new SuccessResult<FormattedText>(formattedText);
+            }
+
             // The question number + question stays the same. We should do this in a loop (move next, is answer line, etc.)
             int linesChecked = 0;
             bool foundNextToken = false;
@@ -149,6 +154,46 @@ namespace YetAnotherPacketParser.Parser
             }
 
             return Strings.ParseFailureMessage(message, lines.LineNumber, snippet.ToString());
+        }
+
+        private static bool TryGetPostQuestionMetadata(LinesEnumerator lines, out PostQuestionMetadataLine? line)
+        {
+            line = null;
+            try
+            {
+                if (lines.Current == null)
+                {
+                    return false;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+
+            do
+            {
+                switch (lines.Current.Type)
+                {
+                    // Post-question metadata normally follows an answer, though there could be some unclassified lines
+                    // in-between if there are some extra newlines between them.
+                    case LineType.Answer:
+                    case LineType.Unclassified:
+                        continue;
+                    case LineType.PostQuestionMetadata:
+                        if (lines.Current is PostQuestionMetadataLine metadataLine)
+                        {
+                            line = metadataLine;
+                            return true;
+                        }
+
+                        return false;
+                    default:
+                        return false;
+                }
+            } while (lines.MoveNext());
+
+            return false;
         }
 
         private static bool TryGetNextQuestionLine(LinesEnumerator lines, out NumberedQuestionLine? line)
@@ -291,9 +336,13 @@ namespace YetAnotherPacketParser.Parser
                 return new FailureResult<TossupNode>(questionResult.ErrorMessages);
             }
 
-            // TODO: Support editor's notes. Would require changing the lexer, or having some look-behind so we can
-            // see if the previous line starts with an editor's note tag
-            return new SuccessResult<TossupNode>(new TossupNode(questionNumber, questionResult.Value));
+            string? metadata = null;
+            if (TryGetPostQuestionMetadata(lines, out PostQuestionMetadataLine? metadataLine) && metadataLine != null)
+            {
+                metadata = metadataLine.Text.UnformattedText;
+            }
+
+            return new SuccessResult<TossupNode>(new TossupNode(questionNumber, questionResult.Value, metadata));
         }
 
         private static IResult<BonusNode> ParseBonus(LinesEnumerator lines, int bonusNumber)
@@ -317,8 +366,15 @@ namespace YetAnotherPacketParser.Parser
                 return new FailureResult<BonusNode>(bonusPartsResult.ErrorMessages);
             }
 
+            // Metadata is always at the end of all of the bonus parts
+            string? metadata = null;
+            if (TryGetPostQuestionMetadata(lines, out PostQuestionMetadataLine? metadataLine) && metadataLine != null)
+            {
+                metadata = metadataLine.Text.UnformattedText;
+            }
+
             return new SuccessResult<BonusNode>(new BonusNode(
-                questionNumber, leadinResult.Value, bonusPartsResult.Value, null));
+                questionNumber, leadinResult.Value, bonusPartsResult.Value, metadata));
         }
 
         private static IResult<List<BonusPartNode>> ParseBonusParts(LinesEnumerator lines)
@@ -391,7 +447,7 @@ namespace YetAnotherPacketParser.Parser
             FormattedText answer = lines.Current.Text;
 
             // TODO: Support editor's notes. Would require changing the lexer, or having some look-behind so we can
-            // see if the previous line starts with an editor's note tag
+            // see if the previous line starts with an editor's note tag.
             return new SuccessResult<QuestionNode>(new QuestionNode(questionResult.Value, answer));
         }
 

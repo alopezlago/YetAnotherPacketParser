@@ -32,5 +32,11 @@ namespace YetAnotherPacketParserCommandLine
 
         [Option('v', "verbose", HelpText = "Verbose logging", Required = false, Default = false)]
         public bool Verbose { get; set; }
+
+        [Option(
+            "mergeMultiple",
+            HelpText = "When parsing multiple packets from a zip file, return a JSON array or combined HTML file. If set to false, returns a zip file of individual packets. Defaults to false.",
+            Default = false)]
+        public bool MergeMultiplePackets { get; set; }
     }
 }

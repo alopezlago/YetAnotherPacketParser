@@ -5,6 +5,7 @@
         Unclassified,
         Answer,
         NumberedQuestion,
+        PostQuestionMetadata,
         BonusPart
     }
 }

@@ -20,7 +20,9 @@ namespace YetAnotherPacketParserTests
                 new TossupNode[]
                 {
                     new TossupNode(
-                        1, new QuestionNode(CreateFormattedText(questionText), CreateFormattedText(answerText)))
+                        1,
+                        new QuestionNode(CreateFormattedText(questionText), CreateFormattedText(answerText)),
+                        "<Alice - History>")
                 },
                 Array.Empty<BonusNode>());
 
@@ -34,7 +36,9 @@ namespace YetAnotherPacketParserTests
             Assert.IsFalse(string.IsNullOrEmpty(result), $"Compiled packet is empty. Packet: {result}");
             Assert.IsTrue(result.Contains(questionText), $"Couldn't find question text in packet. Packet: {result}");
             Assert.IsTrue(result.Contains(answerText), $"Couldn't find answer in packet. Packet: {result}");
-            Assert.IsTrue(result.Contains("_sanitized"), "There should be sanitized fields");
+            Assert.IsTrue(result.Contains("_sanitized"), "There should be sanitized fields. Packet: {result}");
+            Assert.IsTrue(result.Contains("number"), "There should be a number field. Packet: {result}");
+            Assert.IsTrue(result.Contains("metadata"), "There should be a metadata field. Packet: {result}");
 
             // TODO: Verify the results as a JsonPacketNode by either using Json.Net or creating a JsonConverter
         }
@@ -49,7 +53,9 @@ namespace YetAnotherPacketParserTests
                 new TossupNode[]
                 {
                     new TossupNode(
-                        1, new QuestionNode(CreateFormattedText(questionText), CreateFormattedText(answerText)))
+                        1,
+                        new QuestionNode(CreateFormattedText(questionText), CreateFormattedText(answerText)),
+                        "<Alice - History>")
                 },
                 Array.Empty<BonusNode>());
 
@@ -64,7 +70,9 @@ namespace YetAnotherPacketParserTests
             Assert.IsFalse(string.IsNullOrEmpty(result), $"Compiled packet is empty. Packet: {result}");
             Assert.IsTrue(result.Contains(questionText), $"Couldn't find question text in packet. Packet: {result}");
             Assert.IsTrue(result.Contains(answerText), $"Couldn't find answer in packet. Packet: {result}");
-            Assert.IsFalse(result.Contains("_sanitized"), "There should be no sanitized fields");
+            Assert.IsFalse(result.Contains("_sanitized"), "There should be no sanitized fields. Packet: {result}");
+            Assert.IsFalse(result.Contains("number"), "There should be no number field. Packet: {result}");
+            Assert.IsTrue(result.Contains("metadata"), "There should be a metadata field. Packet: {result}");
 
             // TODO: Verify the results as a JsonPacketNode by either using Json.Net or creating a JsonConverter
         }
