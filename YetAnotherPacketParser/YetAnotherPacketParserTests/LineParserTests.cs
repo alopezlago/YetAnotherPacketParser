@@ -47,6 +47,37 @@ namespace YetAnotherPacketParserTests
             Assert.AreEqual(number, tossup.Number, "Unexpected tossup number");
             Assert.AreEqual(questionText, tossup.Question.Question.UnformattedText, "Unexpected question");
             Assert.AreEqual(answer, tossup.Question.Answer.UnformattedText, "Unexpected answer");
+            Assert.IsNull(tossup.Metadata, "There should be no metadata");
+        }
+
+        [TestMethod]
+        public void OneTossupWithPostQuestionMetadataPacketParses()
+        {
+            const int number = 1;
+            const string questionText = "This is my tossup";
+            const string answer = "An answer";
+            const string metadata = "Some metadata";
+
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(number, questionText),
+                CreateAnswerLine(answer),
+                CreatePostQuestionMetadaLine(metadata)
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsTrue(packetResult.Success);
+
+            PacketNode packet = packetResult.Value;
+            Assert.AreEqual(1, packet.Tossups.Count(), "Unexpected number of tossups");
+            Assert.IsNull(packet.Bonuses?.Count(), "Bonuses should be null");
+
+            TossupNode tossup = packet.Tossups.First();
+            Assert.AreEqual(number, tossup.Number, "Unexpected tossup number");
+            Assert.AreEqual(questionText, tossup.Question.Question.UnformattedText, "Unexpected question");
+            Assert.AreEqual(answer, tossup.Question.Answer.UnformattedText, "Unexpected answer");
+            Assert.AreEqual(metadata, tossup.Metadata, "Unexpected metatadata");
         }
 
         [TestMethod]
@@ -134,6 +165,45 @@ namespace YetAnotherPacketParserTests
                 Assert.AreEqual(index + 1, tossup.Number, "Unexpected tossup number");
                 Assert.AreEqual(questions[index], tossup.Question.Question.UnformattedText, "Unexpected question");
                 Assert.AreEqual(answers[index], tossup.Question.Answer.UnformattedText, "Unexpected answer");
+                Assert.IsNull(tossup.Metadata, "Metadata should be null");
+                index++;
+            }
+        }
+
+        [TestMethod]
+        public void TwoTossupsWithMetdataPacketParses()
+        {
+            string[] questions = new string[] { "This is my tossup", "Another tossup" };
+            string[] answers = new string[] { "An answer", "Answer #2" };
+            string[] metadata = new string[] { "<Alice, Science>", "<Bob, Literature>" };
+
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, questions[0]),
+                CreateAnswerLine(answers[0]),
+                CreatePostQuestionMetadaLine(metadata[0]),
+                new Line(CreateFormattedText(string.Empty)),
+                CreateQuestionLine(2, questions[1]),
+                CreateAnswerLine(answers[1]),
+                new Line(CreateFormattedText(string.Empty)),
+                CreatePostQuestionMetadaLine(metadata[1])
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsTrue(packetResult.Success);
+
+            PacketNode packet = packetResult.Value;
+            Assert.AreEqual(2, packet.Tossups.Count(), "Unexpected number of tossups");
+            Assert.IsNull(packet.Bonuses?.Count(), "Bonuses should be null");
+
+            int index = 0;
+            foreach (TossupNode tossup in packet.Tossups)
+            {
+                Assert.AreEqual(index + 1, tossup.Number, "Unexpected tossup number");
+                Assert.AreEqual(questions[index], tossup.Question.Question.UnformattedText, "Unexpected question");
+                Assert.AreEqual(answers[index], tossup.Question.Answer.UnformattedText, "Unexpected answer");
+                Assert.AreEqual(metadata[index], tossup.Metadata, "Unexpected metadata");
                 index++;
             }
         }
@@ -297,6 +367,31 @@ namespace YetAnotherPacketParserTests
         }
 
         [TestMethod]
+        public void BonusWithMeatdataSucceeds()
+        {
+            const string metadata = "My metadata";
+            ILine[] lines = new ILine[]
+            {
+                CreateQuestionLine(1, "Tossup"),
+                CreateAnswerLine("Answer"),
+                CreateQuestionLine(1, "Bonus leadin"),
+                CreatePartLine("Bonus part that is", 10),
+                CreateAnswerLine("The answer"),
+                CreatePostQuestionMetadaLine(metadata)
+            };
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsTrue(packetResult.Success);
+            Assert.IsNotNull(packetResult.Value.Bonuses);
+            Assert.AreEqual(1, packetResult.Value.Bonuses?.Count(), "Unexpected number of bonuses");
+
+            BonusNode bonus = packetResult.Value.Bonuses.First();
+            Assert.AreEqual(1, bonus.Parts.Count(), "Unexpected number of parts");
+            Assert.AreEqual(metadata, bonus.Metadata, "Unexpected metadata");
+        }
+
+        [TestMethod]
         public void BonusPartWithDifficultyModifierSucceeds()
         {
             const char modifier = 'h';
@@ -448,6 +543,11 @@ namespace YetAnotherPacketParserTests
         private static NumberedQuestionLine CreateQuestionLine(int number, string text)
         {
             return new NumberedQuestionLine(CreateFormattedText(text), number);
+        }
+
+        private static PostQuestionMetadataLine CreatePostQuestionMetadaLine(string metadata)
+        {
+            return new PostQuestionMetadataLine(CreateFormattedText(metadata));
         }
     }
 }

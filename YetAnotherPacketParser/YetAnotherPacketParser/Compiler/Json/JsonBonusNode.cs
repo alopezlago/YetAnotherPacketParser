@@ -24,6 +24,7 @@ namespace YetAnotherPacketParser.Compiler.Json
                 null;
             this.Values = new List<int>();
 
+            this.Metadata = bonusNode.Metadata;
             this.DifficultyModifiers = partNodes.Any(node => node.DifficultyModifier.HasValue) ? new List<char?>() : null;
 
             foreach (BonusPartNode partNode in partNodes)
@@ -41,6 +42,8 @@ namespace YetAnotherPacketParser.Compiler.Json
         public string Leadin { get; }
 
         public string? Leadin_sanitized { get; }
+
+        public string? Metadata { get; }
 
         public ICollection<string> Answers { get; }
 

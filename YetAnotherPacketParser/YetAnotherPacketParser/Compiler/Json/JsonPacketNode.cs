@@ -14,13 +14,13 @@ namespace YetAnotherPacketParser.Compiler.Json
             this.Tossups = new List<JsonTossupNode>();
         }
 
-        public JsonPacketNode(PacketNode node, bool includeSanitizedFields) : this()
+        public JsonPacketNode(PacketNode node, bool modaqFormat) : this()
         {
             Verify.IsNotNull(node, nameof(node));
 
             foreach (TossupNode tossupNode in node.Tossups)
             {
-                this.Tossups.Add(new JsonTossupNode(tossupNode, includeSanitizedFields));
+                this.Tossups.Add(new JsonTossupNode(tossupNode, modaqFormat));
             }
 
             if (node.Bonuses != null)
@@ -28,7 +28,7 @@ namespace YetAnotherPacketParser.Compiler.Json
                 this.Bonuses = new List<JsonBonusNode>();
                 foreach (BonusNode bonusNode in node.Bonuses)
                 {
-                    this.Bonuses.Add(new JsonBonusNode(bonusNode, includeSanitizedFields));
+                    this.Bonuses.Add(new JsonBonusNode(bonusNode, modaqFormat));
                 }
             }
         }

@@ -9,7 +9,7 @@ namespace YetAnotherPacketParser
         // If Success is true, ErrorMessages should throw
         IEnumerable<string> ErrorMessages { get; }
 
-        // If Sucess if false, ErrorMessage should throw
+        // If Sucess if false, Value should throw
         T Value { get; }
     }
 }

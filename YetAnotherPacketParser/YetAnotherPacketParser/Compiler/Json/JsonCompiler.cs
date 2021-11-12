@@ -25,7 +25,7 @@ namespace YetAnotherPacketParser.Compiler.Json
             // The format that Jerry's parser uses for JSON (and that the reader expects as a result) is different
             // than the structure of the PacketNode, so transform it to a structure close to it (minus author and
             // packet fields)
-            JsonPacketNode sanitizedJsonPacket = new JsonPacketNode(sanitizedPacket, !this.Options.ModaqFormat);
+            JsonPacketNode sanitizedJsonPacket = new JsonPacketNode(sanitizedPacket, this.Options.ModaqFormat);
 
             using (Stream stream = new MemoryStream())
             {

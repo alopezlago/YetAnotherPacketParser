@@ -48,6 +48,12 @@ namespace YetAnotherPacketParser.Compiler.Html
             builder.Append(tossup.Number);
             builder.Append(". ");
             WriteQuestion(tossup.Question, builder);
+            if (!string.IsNullOrEmpty(tossup.Metadata))
+            {
+                builder.Append(tossup.Metadata);
+                builder.Append("<br>");
+            }
+
             builder.Append("</p>");
         }
 
@@ -62,6 +68,13 @@ namespace YetAnotherPacketParser.Compiler.Html
             {
                 WriteBonusPart(bonusPart, builder);
             }
+
+            if (!string.IsNullOrEmpty(bonus.Metadata))
+            {
+                builder.Append(bonus.Metadata);
+                builder.Append("<br>");
+            }
+
             builder.Append("</p>");
         }
 

@@ -251,6 +251,10 @@ namespace YetAnotherPacketParser.Lexer
                     {
                         line = new BonusPartLine(formattedText.Substring(matchValue.Length), partValue.Value, difficultyModifier);
                     }
+                    else if (LexerClassifier.TextStartsWithPostQuestionMetadata(unformattedText))
+                    {
+                        line = new PostQuestionMetadataLine(formattedText);
+                    }
                     else
                     {
                         line = new Line(formattedText);

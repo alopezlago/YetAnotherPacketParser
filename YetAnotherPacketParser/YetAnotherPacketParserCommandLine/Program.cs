@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CommandLine;
 using YetAnotherPacketParser;
@@ -103,21 +104,18 @@ namespace YetAnotherPacketParserCommandLine
                     File.Delete(options.Output);
                 }
 
-                using (ZipArchive outputArchive = ZipFile.Open(options.Output, ZipArchiveMode.Create))
+                // Choose between ZIP or combination
+                if (!options.MergeMultiplePackets)
                 {
-                    foreach (ConvertResult compileResult in successResults)
-                    {
-                        string newFilename = outputFormatIsJson ?
-                            compileResult.Filename.Replace(".docx", ".json") :
-                            compileResult.Filename.Replace(".docx", ".html");
-                        ZipArchiveEntry entry = outputArchive.CreateEntry(newFilename);
-
-                        // We can't do this asynchronously, because it complains about writing to the same ZipArchive stream
-                        using (StreamWriter writer = new StreamWriter(entry.Open()))
-                        {
-                            writer.Write(compileResult.Result.Value);
-                        }
-                    }
+                    WriteMultiplePacketsToZip(successResults, options, outputFormatIsJson);
+                }
+                else if (outputFormatIsJson)
+                {
+                    WriteMultiplePacketsToJson(successResults, options);
+                }
+                else
+                {
+                    WriteMultiplePacketsToHtml(successResults, options);
                 }
 
                 Console.WriteLine();
@@ -142,6 +140,87 @@ namespace YetAnotherPacketParserCommandLine
             }
 
             Console.WriteLine(message);
+        }
+
+        private static void WriteMultiplePacketsToZip(
+            IEnumerable<ConvertResult> packets, CommandLineOptions options, bool outputFormatIsJson)
+        {
+            using (ZipArchive outputArchive = ZipFile.Open(options.Output, ZipArchiveMode.Create))
+            {
+                foreach (ConvertResult compileResult in packets)
+                {
+                    string newFilename = outputFormatIsJson ?
+                        compileResult.Filename.Replace(".docx", ".json") :
+                        compileResult.Filename.Replace(".docx", ".html");
+                    ZipArchiveEntry entry = outputArchive.CreateEntry(newFilename);
+
+                    // We can't do this asynchronously, because it complains about writing to the same ZipArchive stream
+                    using (StreamWriter writer = new StreamWriter(entry.Open()))
+                    {
+                        writer.Write(compileResult.Result.Value);
+                    }
+                }
+            }
+        }
+
+        private static void WriteMultiplePacketsToJson(IEnumerable<ConvertResult> packets, CommandLineOptions options)
+        {
+            IList<JsonPacket> jsonPackets = new List<JsonPacket>();
+            foreach (ConvertResult compileResult in packets.OrderBy(packet => packet.Filename))
+            {
+                jsonPackets.Add(new JsonPacket()
+                {
+                    name = compileResult.Filename.Replace(".docx", string.Empty),
+                    packet = JsonSerializer.Deserialize<object>(compileResult.Result.Value)
+                });
+            }
+
+            string content = JsonSerializer.Serialize(jsonPackets);
+
+            using (FileStream stream = new FileStream(options.Output, FileMode.OpenOrCreate, FileAccess.Write))
+            using (StreamWriter writer = new StreamWriter(stream))
+            {
+                writer.Write(content);
+            }
+        }
+
+        private static void WriteMultiplePacketsToHtml(IEnumerable<ConvertResult> packets, CommandLineOptions options)
+        {
+            IList<string> htmlBodies = new List<string>();
+            foreach (ConvertResult compileResult in packets.OrderBy(packet => packet.Filename))
+            {
+                string html = compileResult.Result.Value;
+                int bodyStartIndex = html.IndexOf("<body>", StringComparison.OrdinalIgnoreCase);
+                int bodyEndIndex = html.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+                if (bodyStartIndex == -1 || bodyEndIndex == -1 || bodyStartIndex > bodyEndIndex)
+                {
+                    // Skip, since the HTML was malformed
+                    continue;
+                }
+
+                // Skip past "<body>"
+                bodyStartIndex += 6;
+                string htmlBody = $"<h2>{compileResult.Filename.Replace(".docx", string.Empty)}</h2>{html.Substring(bodyStartIndex, bodyEndIndex - bodyStartIndex)}";
+
+                htmlBodies.Add(htmlBody);
+            }
+
+            string bundledHtml = $"<html><body>{string.Join("<br>", htmlBodies)}</body></html>";
+
+            using (FileStream stream = new FileStream(options.Output, FileMode.OpenOrCreate, FileAccess.Write))
+            using (StreamWriter writer = new StreamWriter(stream))
+            {
+                writer.Write(bundledHtml);
+            }
+        }
+
+        // TODO: See how to share this between the function and the command line        
+        private class JsonPacket
+        {
+            // Lower-cased so that it appears lowercased in the JSON output
+            public string name { get; set; }
+
+            public object packet { get; set; }
         }
     }
 }

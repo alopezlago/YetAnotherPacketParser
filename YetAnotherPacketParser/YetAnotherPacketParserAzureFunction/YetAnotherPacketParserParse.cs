@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Microsoft.AspNetCore.Http;
@@ -82,36 +83,43 @@ namespace YetAnotherPacketParserAzureFunction
                 return new OkObjectResult(compileResult.Result.Value);
             }
 
-            // We have a zip file. Return one.
+            if (TryGetStringValueFromQuery(request, "mergeMultiple", out string mergeMultipleValue) &&
+                bool.TryParse(mergeMultipleValue, out bool mergeMultiple))
+            {
+                log.LogInformation($"Merge multiple packets: {mergeMultiple}");
+            }
+            else
+            {
+                mergeMultiple = false;
+            }
+
+            // We have a zip file. Return one, or return a merged file if requested.
             // TODO: See if we can return a JSON result showing success, # successfully parsed packets, and the contents
+            // as a zip file and JSON array?
             bool outputFormatIsJson = options.OutputFormat == OutputFormat.Json;
             IEnumerable<ConvertResult> successResults = results.Where(result => result.Result.Success);
             using (MemoryStream memoryStream = new MemoryStream())
             {
-                using (ZipArchive archive = new ZipArchive(memoryStream, ZipArchiveMode.Create))
+                if (!mergeMultiple)
                 {
-                    foreach (ConvertResult compileResult in successResults)
-                    {
-                        string newFilename = outputFormatIsJson ?
-                            compileResult.Filename.Replace(".docx", ".json") :
-                            compileResult.Filename.Replace(".docx", ".html");
-                        ZipArchiveEntry entry = archive.CreateEntry(newFilename);
+                    WriteMultiplePacketsToZip(successResults, memoryStream, outputFormatIsJson);
+                }
+                else if (outputFormatIsJson)
+                {
+                    WriteMultiplePacketsToJson(successResults, memoryStream);
+                }
+                else
+                {
+                    WriteMultiplePacketsToHtml(successResults, memoryStream);
+                }
 
-                        // We can't do this asynchronously, because it complains about writing to the same ZipArchive stream
-                        using (StreamWriter writer = new StreamWriter(entry.Open()))
-                        {
-                            writer.Write(compileResult.Result.Value);
-                        }
-                    }
-
-                    log.LogInformation($"Succesfully parsed {successResults.Count()} out of {results.Count()} packets");
-                    IEnumerable<ConvertResult> failedResults = results
-                        .Where(result => !result.Result.Success)
-                        .OrderBy(result => result.Filename);
-                    foreach (ConvertResult compileResult in failedResults)
-                    {
-                        log.LogWarning($"{compileResult.Filename} failed to compile.");
-                    }
+                log.LogInformation($"Succesfully parsed {successResults.Count()} out of {results.Count()} packets");
+                IEnumerable<ConvertResult> failedResults = results
+                    .Where(result => !result.Result.Success)
+                    .OrderBy(result => result.Filename);
+                foreach (ConvertResult compileResult in failedResults)
+                {
+                    log.LogWarning($"{compileResult.Filename} failed to compile.");
                 }
 
                 await memoryStream.FlushAsync();
@@ -249,6 +257,86 @@ namespace YetAnotherPacketParserAzureFunction
 
             stringValue = null;
             return false;
+        }
+
+        // TODO: These were copied and modified from Program.cs. See if we can share the code.
+        private static void WriteMultiplePacketsToJson(IEnumerable<ConvertResult> packets, Stream stream)
+        {
+            IList<JsonPacket> jsonPackets = new List<JsonPacket>();
+            foreach (ConvertResult compileResult in packets.OrderBy(packet => packet.Filename))
+            {
+                jsonPackets.Add(new JsonPacket()
+                {
+                    name = compileResult.Filename.Replace(".docx", string.Empty),
+                    packet = JsonSerializer.Deserialize<object>(compileResult.Result.Value)
+                });
+            }
+
+            string content = JsonSerializer.Serialize(jsonPackets);
+
+            using (StreamWriter writer = new StreamWriter(stream))
+            {
+                writer.Write(content);
+            }
+        }
+
+        private static void WriteMultiplePacketsToHtml(IEnumerable<ConvertResult> packets, Stream stream)
+        {
+            IList<string> htmlBodies = new List<string>();
+            foreach (ConvertResult compileResult in packets.OrderBy(packet => packet.Filename))
+            {
+                string html = compileResult.Result.Value;
+                int bodyStartIndex = html.IndexOf("<body>", StringComparison.OrdinalIgnoreCase);
+                int bodyEndIndex = html.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+                if (bodyStartIndex == -1 || bodyEndIndex == -1 || bodyStartIndex > bodyEndIndex)
+                {
+                    // Skip, since the HTML was malformed
+                    continue;
+                }
+
+                // Skip past "<body>"
+                bodyStartIndex += 6;
+                string htmlBody = $"<h2>{compileResult.Filename.Replace(".docx", string.Empty)}</h2>{html.Substring(bodyStartIndex, bodyEndIndex - bodyStartIndex)}";
+
+                htmlBodies.Add(htmlBody);
+            }
+
+            string bundledHtml = $"<html><body>{string.Join("<br>", htmlBodies)}</body></html>";
+
+            using (StreamWriter writer = new StreamWriter(stream))
+            {
+                writer.Write(bundledHtml);
+            }
+        }
+
+        private static void WriteMultiplePacketsToZip(
+            IEnumerable<ConvertResult> packets, Stream stream, bool outputFormatIsJson)
+        {
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Create))
+            {
+                foreach (ConvertResult compileResult in packets)
+                {
+                    string newFilename = outputFormatIsJson ?
+                        compileResult.Filename.Replace(".docx", ".json") :
+                        compileResult.Filename.Replace(".docx", ".html");
+                    ZipArchiveEntry entry = archive.CreateEntry(newFilename);
+
+                    // We can't do this asynchronously, because it complains about writing to the same ZipArchive stream
+                    using (StreamWriter writer = new StreamWriter(entry.Open()))
+                    {
+                        writer.Write(compileResult.Result.Value);
+                    }
+                }
+            }
+        }
+
+        // TODO: See how to share this between the function and the command line        
+        private class JsonPacket
+        {
+            // Lower-cased so that it appears lowercased in the JSON output
+            public string name { get; set; }
+
+            public object packet { get; set; }
         }
     }
 }

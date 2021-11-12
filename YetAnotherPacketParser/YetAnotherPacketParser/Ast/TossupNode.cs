@@ -4,17 +4,17 @@ namespace YetAnotherPacketParser.Ast
 {
     public class TossupNode
     {
-        public TossupNode(int number, QuestionNode question, string? editorsNote = null)
+        public TossupNode(int number, QuestionNode question, string? metadata = null)
         {
-            this.EditorsNote = editorsNote;
             this.Number = number;
             this.Question = question ?? throw new ArgumentNullException(nameof(question));
+            this.Metadata = metadata;
         }
-
-        public string? EditorsNote { get; }
 
         public int Number { get; }
 
         public QuestionNode Question { get; }
+
+        public string? Metadata { get; }
     }
 }
