@@ -547,7 +547,7 @@ namespace YetAnotherPacketParserTests
 
         private static PostQuestionMetadataLine CreatePostQuestionMetadaLine(string metadata)
         {
-            return new PostQuestionMetadataLine(CreateFormattedText(metadata));
+            return new PostQuestionMetadataLine(CreateFormattedText($"<{metadata}>"));
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using YetAnotherPacketParser.Lexer;
 
 namespace YetAnotherPacketParser
@@ -29,6 +30,11 @@ namespace YetAnotherPacketParser
             return $"[{value}] {part}";
         }
 
+        public static string CompilationComplete(string packetName)
+        {
+            return $"{packetName}: Compilation complete.";
+        }
+
         public static string CouldntFindNextPart(string context, int linesCount)
         {
             string lineString = linesCount == 1 ? "line" : "lines";
@@ -45,6 +51,11 @@ namespace YetAnotherPacketParser
             return $"Invalid data: {message}";
         }
 
+        public static string LexingComplete(string packetName)
+        {
+            return $"{packetName}: Lexing complete.";
+        }
+
         public static string NoBonusQuestionNumberFound(int bonusNumber)
         {
             return $"Failed to parse bonus #{bonusNumber}. No question number found.";
@@ -53,6 +64,12 @@ namespace YetAnotherPacketParser
         public static string NoMoreLinesFound(string context, int linesChecked)
         {
             return $"Failed to parse {context}. No more lines found. Number of lines searched for after the last part: {linesChecked}";
+        }
+
+        public static string NonThreePartBonusesFound(IEnumerable<int> bonusNumbers)
+        {
+            string bonusNumbersText = string.Join(", ", bonusNumbers);
+            return $"Warning: non-three part bonuses found. Bonus number(s): {bonusNumbersText}";
         }
 
         public static string NoTossupQuestionNumberFound(int tossupNumber)
@@ -69,6 +86,17 @@ namespace YetAnotherPacketParser
         {
             string snippetMessage = snippet?.Length > 0 ? $@", ""{snippet}""" : "";
             return $"{message} (Line #{lineNumber}{snippetMessage})";
+        }
+
+        public static string ParsingComplete(string packetName, int tossupsCount, int bonusesCount)
+        {
+            return $"{packetName}: Parsing complete. {tossupsCount} tossup(s), {bonusesCount} bonus(es).";
+        }
+
+        public static string TimingLog(
+            string packetName, long timeInMsLines, long timeInMsParse, long timeInMsCompile, long totalTimeMs)
+        {
+            return $"{packetName}: Lex {timeInMsLines}ms, Parse {timeInMsParse}ms, Compile {timeInMsCompile}ms. Total: {totalTimeMs}ms";
         }
 
         public static string TooManyPacketsToParse(int maximumPackets)
