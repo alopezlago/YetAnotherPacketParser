@@ -153,7 +153,7 @@ namespace YetAnotherPacketParser
                 return CreateFailedCompileResult(packetName, Strings.LexingError, linesResult.ErrorMessages);
             }
 
-            options.Log?.Invoke(LogLevel.Verbose, $"{packetName}: Lexing complete.");
+            options.Log?.Invoke(LogLevel.Verbose, Strings.LexingComplete(packetName));
 
             LinesParserOptions parserOptions = new LinesParserOptions()
             {
@@ -173,7 +173,14 @@ namespace YetAnotherPacketParser
             int tossupsCount = packetNode.Tossups.Count();
             int bonusesCount = packetNode.Bonuses?.Count() ?? 0;
             options.Log?.Invoke(
-                LogLevel.Informational, $"{packetName}: Parsing complete. {tossupsCount} tossup(s), {bonusesCount} bonus(es).");
+                LogLevel.Informational, Strings.ParsingComplete(packetName, tossupsCount, bonusesCount));
+
+            if (options.Log != null && packetNode.Bonuses?.Any(bonus => bonus.Parts.Count() != 3) == true)
+            {
+                options.Log.Invoke(
+                    LogLevel.Informational, Strings.NonThreePartBonusesFound(
+                        packetNode.Bonuses.Where(bonus => bonus.Parts.Count() != 3).Select((bonus) => bonus.Number)));
+            }
 
             string outputContents;
             switch (options.OutputFormat)
@@ -199,7 +206,7 @@ namespace YetAnotherPacketParser
             stopwatch.Stop();
             long timeInMsCompile = stopwatch.ElapsedMilliseconds;
 
-            options.Log?.Invoke(LogLevel.Informational, $"{packetName}: Compilation complete.");
+            options.Log?.Invoke(LogLevel.Informational, Strings.CompilationComplete(packetName));
 
             if (string.IsNullOrEmpty(outputContents))
             {
@@ -209,7 +216,7 @@ namespace YetAnotherPacketParser
             long totalTimeMs = timeInMsLines + timeInMsParse + timeInMsCompile;
             options.Log?.Invoke(
                 LogLevel.Verbose,
-                $"{packetName}: Lex {timeInMsLines}ms, Parse {timeInMsParse}ms, Compile {timeInMsCompile}ms. Total: {totalTimeMs}ms ");
+                Strings.TimingLog(packetName, timeInMsLines, timeInMsParse, timeInMsCompile, totalTimeMs));
 
             return new ConvertResult(packetName, new SuccessResult<string>(outputContents));
         }

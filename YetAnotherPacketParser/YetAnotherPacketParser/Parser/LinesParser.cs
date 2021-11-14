@@ -118,6 +118,27 @@ namespace YetAnotherPacketParser.Parser
             return new SuccessResult<FormattedText>(formattedText);
         }
 
+        private static string? GetMetadataText(LinesEnumerator lines)
+        {
+            if (!TryGetPostQuestionMetadata(lines, out PostQuestionMetadataLine? metadataLine) || metadataLine == null)
+            {
+                return null;
+            }
+
+            string metadata = metadataLine.Text.UnformattedText;
+            if (metadata.Length > 2)
+            {
+                int metadataStart = metadata.IndexOf('<');
+                int metadataEnd = metadata.LastIndexOf('>');
+                if (metadataStart >= 0 && metadataStart < metadata.Length + 1 && metadataEnd > metadataStart)
+                {
+                    metadata = metadata.Substring(metadataStart + 1, metadataEnd - 1);
+                }
+            }
+
+            return metadata;
+        }
+
         private static string GetFailureMessage(LinesEnumerator lines, string message)
         {
             StringBuilder snippet = new StringBuilder(10);
@@ -336,12 +357,7 @@ namespace YetAnotherPacketParser.Parser
                 return new FailureResult<TossupNode>(questionResult.ErrorMessages);
             }
 
-            string? metadata = null;
-            if (TryGetPostQuestionMetadata(lines, out PostQuestionMetadataLine? metadataLine) && metadataLine != null)
-            {
-                metadata = metadataLine.Text.UnformattedText;
-            }
-
+            string? metadata = GetMetadataText(lines);
             return new SuccessResult<TossupNode>(new TossupNode(questionNumber, questionResult.Value, metadata));
         }
 
@@ -367,12 +383,7 @@ namespace YetAnotherPacketParser.Parser
             }
 
             // Metadata is always at the end of all of the bonus parts
-            string? metadata = null;
-            if (TryGetPostQuestionMetadata(lines, out PostQuestionMetadataLine? metadataLine) && metadataLine != null)
-            {
-                metadata = metadataLine.Text.UnformattedText;
-            }
-
+            string? metadata = GetMetadataText(lines);
             return new SuccessResult<BonusNode>(new BonusNode(
                 questionNumber, leadinResult.Value, bonusPartsResult.Value, metadata));
         }
