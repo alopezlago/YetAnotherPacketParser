@@ -18,21 +18,27 @@ namespace YetAnotherPacketParser.Lexer
             // Should be surrounded by a try/catch, in case parsing fails
             try
             {
-                BrowsingContext context = new BrowsingContext(Configuration.Default);
-                IDocument document = await context.OpenAsync((request) => request.Content(stream));
-                IHtmlElement? body = document.Body;
-                if (body == null)
+                IHtmlElement? body;
+                using (BrowsingContext context = new BrowsingContext(Configuration.Default))
                 {
-                    return new FailureResult<IEnumerable<ILine>>(Strings.HtmlFileNeedsBodyElement);
+                    IDocument document = await context.OpenAsync((request) => request.Content(stream)).ConfigureAwait(false);
+                    body = document.Body;
+                    if (body == null)
+                    {
+                        return new FailureResult<IEnumerable<ILine>>(Strings.HtmlFileNeedsBodyElement);
+                    }
                 }
 
-                IList<FormattedText> textLines = this.GetTextLines(body);
+                IList<FormattedText> textLines = GetTextLines(body);
                 return ClassifyLines(textLines);
             }
+            // Unfortunately, we don't know what AngleSharp can throw, so we have to catch-all from here
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
             {
                 // This is bad form, but I'll try to narrow down the exceptions ltaer
-                Console.Error.WriteLine(ex);
+                await Console.Error.WriteLineAsync(ex.ToString()).ConfigureAwait(false);
                 IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>(
                     Strings.UnableToOpenHtml(ex.Message));
                 return lines;
@@ -40,7 +46,7 @@ namespace YetAnotherPacketParser.Lexer
         }
 
         // We get the root paragraphs, then get all of the lines included in the root paragraph
-        private IList<FormattedText> GetTextLines(IHtmlElement body)
+        private static IList<FormattedText> GetTextLines(IHtmlElement body)
         {
             IList<FormattedText> formattedTexts = new List<FormattedText>();
             Formatting previousFormatting = new Formatting();

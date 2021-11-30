@@ -18,7 +18,6 @@ namespace YetAnotherPacketParser
             zipSpannedMagicWords
         };
 
-
         // Returns a succesful result if it is a zip file. It returns a read-only stream
         public static async Task<Tuple<bool, Stream>> IsZipFile(Stream stream)
         {
@@ -34,7 +33,7 @@ namespace YetAnotherPacketParser
             }
 
             byte[] buffer = new byte[zipMagicWords.Length];
-            await stream.ReadAsync(buffer, 0, zipMagicWords.Length);
+            await stream.ReadAsync(buffer, CancellationToken.None).ConfigureAwait(false);
             Stream peekableStream = new PeekableStream(stream, buffer);
             peekableStream.Position = 0;
             return new Tuple<bool, Stream>(
@@ -95,7 +94,7 @@ namespace YetAnotherPacketParser
             {
                 if (offset + count > buffer.Length)
                 {
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(nameof(offset));
                 }
 
                 int index = offset;
@@ -126,6 +125,39 @@ namespace YetAnotherPacketParser
                 }
             }
 
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                int count = buffer.Length;
+                int index = 0;
+                for (long i = this.position; i < this.peekBuffer.Length && index < count; i++)
+                {
+                    buffer.Span[index] = this.peekBuffer[i];
+                    index++;
+                    this.position++;
+                }
+
+                // truncation from long to int is safe if the long is less than int.MaxValue
+                int bytesFromStream = count - index;
+                if (bytesFromStream > 0)
+                {
+                    int readCount = await this.stream.ReadAsync(buffer.Slice(index, bytesFromStream), cancellationToken)
+                        .ConfigureAwait(false);
+
+                    if (this.CanSeek)
+                    {
+                        this.position = this.stream.Position;
+                    }
+
+                    return readCount + index;
+                }
+                else
+                {
+                    return count;
+                }
+            }
+
             public override async Task<int> ReadAsync(
                 byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
@@ -133,35 +165,10 @@ namespace YetAnotherPacketParser
 
                 if (offset + count > buffer.Length)
                 {
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(nameof(offset));
                 }
 
-                int index = offset;
-                for (long i = this.position; i < this.peekBuffer.Length; i++)
-                {
-                    buffer[index] = this.peekBuffer[i];
-                    index++;
-                    this.position++;
-                }
-
-                // truncation from long to int is safe if the long is less than int.MaxValue
-                int bytesFromBuffer = index - offset;
-                int bytesFromStream = count - bytesFromBuffer;
-                if (bytesFromStream > 0)
-                {
-                    int readCount = await this.stream.ReadAsync(buffer, index, bytesFromStream);
-
-                    if (this.CanSeek)
-                    {
-                        this.position = this.stream.Position;
-                    }
-
-                    return readCount + bytesFromBuffer;
-                }
-                else
-                {
-                    return count;
-                }
+                return await this.ReadAsync(buffer.AsMemory().Slice(offset, count), cancellationToken);
             }
 
             public override long Seek(long offset, SeekOrigin origin)
@@ -192,9 +199,10 @@ namespace YetAnotherPacketParser
                 this.stream.Close();
             }
 
-            public override ValueTask DisposeAsync()
+            public override async ValueTask DisposeAsync()
             {
-                return this.stream.DisposeAsync();
+                await base.DisposeAsync().ConfigureAwait(false);
+                await this.stream.DisposeAsync().ConfigureAwait(false);
             }
         }
     }

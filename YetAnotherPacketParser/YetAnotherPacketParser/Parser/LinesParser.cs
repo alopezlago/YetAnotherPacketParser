@@ -128,7 +128,7 @@ namespace YetAnotherPacketParser.Parser
             string metadata = metadataLine.Text.UnformattedText;
             if (metadata.Length > 2)
             {
-                int metadataStart = metadata.IndexOf('<');
+                int metadataStart = metadata.IndexOf('<', StringComparison.Ordinal);
                 int metadataEnd = metadata.LastIndexOf('>');
                 if (metadataStart >= 0 && metadataStart < metadata.Length + 1 && metadataEnd > metadataStart)
                 {
@@ -163,7 +163,7 @@ namespace YetAnotherPacketParser.Parser
                     }
                     else
                     {
-                        snippet.Append(segment.Text.Substring(0, remainingLength));
+                        snippet.Append(segment.Text.AsSpan(0, remainingLength));
                     }
 
                     remainingLength = checked(FailureSnippetCharacterLimit - snippet.Length);

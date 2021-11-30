@@ -50,7 +50,9 @@ namespace YetAnotherPacketParser.Compiler.Html
             WriteQuestion(tossup.Question, builder);
             if (!string.IsNullOrEmpty(tossup.Metadata))
             {
-                builder.Append($"&lt;{tossup.Metadata}&gt;<br>");
+                builder.Append("&lt;");
+                builder.Append(tossup.Metadata);
+                builder.Append("&gt;<br>");
             }
 
             builder.Append("</p>");
@@ -70,7 +72,9 @@ namespace YetAnotherPacketParser.Compiler.Html
 
             if (!string.IsNullOrEmpty(bonus.Metadata))
             {
-                builder.Append($"&lt;{bonus.Metadata}&gt;<br>");
+                builder.Append("&lt;");
+                builder.Append(bonus.Metadata);
+                builder.Append($"&gt;<br>");
             }
 
             builder.Append("</p>");

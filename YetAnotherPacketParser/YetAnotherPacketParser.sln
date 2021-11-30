@@ -1,15 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30320.27
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetAnotherPacketParser", "YetAnotherPacketParser\YetAnotherPacketParser.csproj", "{99472784-A154-49F0-9E85-10F4A5300DE0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YetAnotherPacketParserCommandLine", "YetAnotherPacketParserCommandLine\YetAnotherPacketParserCommandLine.csproj", "{EC1C3290-BFAE-4E31-BF4E-A2A2D736DC6B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetAnotherPacketParserCommandLine", "YetAnotherPacketParserCommandLine\YetAnotherPacketParserCommandLine.csproj", "{EC1C3290-BFAE-4E31-BF4E-A2A2D736DC6B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YetAnotherPacketParserTests", "YetAnotherPacketParserTests\YetAnotherPacketParserTests.csproj", "{811B7F2E-1E9C-486C-9B26-62B99C239CE0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetAnotherPacketParserTests", "YetAnotherPacketParserTests\YetAnotherPacketParserTests.csproj", "{811B7F2E-1E9C-486C-9B26-62B99C239CE0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YetAnotherPacketParserAzureFunction", "YetAnotherPacketParserAzureFunction\YetAnotherPacketParserAzureFunction.csproj", "{B594E98C-9772-40F8-93BA-F641AE397140}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetAnotherPacketParserAzureFunction", "YetAnotherPacketParserAzureFunction\YetAnotherPacketParserAzureFunction.csproj", "{B594E98C-9772-40F8-93BA-F641AE397140}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YetAnotherPacketParserAPI", "YetAnotherPacketParserAPI\YetAnotherPacketParserAPI.csproj", "{90AD57C5-763C-494E-AE92-F90BB0BB5A88}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{B594E98C-9772-40F8-93BA-F641AE397140}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B594E98C-9772-40F8-93BA-F641AE397140}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B594E98C-9772-40F8-93BA-F641AE397140}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90AD57C5-763C-494E-AE92-F90BB0BB5A88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90AD57C5-763C-494E-AE92-F90BB0BB5A88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90AD57C5-763C-494E-AE92-F90BB0BB5A88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90AD57C5-763C-494E-AE92-F90BB0BB5A88}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

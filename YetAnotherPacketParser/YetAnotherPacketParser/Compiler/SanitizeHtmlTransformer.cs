@@ -58,7 +58,9 @@ namespace YetAnotherPacketParser.Compiler
             // We want to escape rather just Sanitize
             string? sanitizedMetadata = node.Metadata == null ?
                 null :
-                this.Sanitizer.Sanitize(node.Metadata.Replace("<", "&lt;").Replace(">", "&gt;"));
+                this.Sanitizer.Sanitize(node.Metadata
+                    .Replace("<", "&lt;", StringComparison.Ordinal)
+                    .Replace(">", "&gt;", StringComparison.Ordinal));
 
             return new TossupNode(node.Number, sanitizedQuestion, sanitizedMetadata);
         }
@@ -83,7 +85,9 @@ namespace YetAnotherPacketParser.Compiler
                 sanitizedBonusParts.Add(this.SanitizeBonusPart(bonusPart));
             }
             string? sanitizedMetadata = node.Metadata != null ?
-                this.Sanitizer.Sanitize(node.Metadata.Replace("<", "&lt;").Replace(">", "&gt;")) :
+                this.Sanitizer.Sanitize(node.Metadata
+                    .Replace("<", "&lt;", StringComparison.Ordinal)
+                    .Replace(">", "&gt;", StringComparison.Ordinal)) :
                 null;
 
             return new BonusNode(node.Number, sanitizedLeadin, sanitizedBonusParts, sanitizedMetadata);

@@ -1,19 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
     <Description>Yet Another Packet Parser Azure Function parses quiz bowl packets and translates them to different formats</Description>
     <Copyright>(c) 2020 Alejandro Lopez-Lago</Copyright>
     <AssemblyName>YetAnotherPacketParserAzureFunction</AssemblyName>
     <Authors>Alejandro Lopez-Lago</Authors>
     <Product>YAPP Azure Function</Product>
-    <AssemblyVersion>0.4.1.0</AssemblyVersion>
-    <FileVersion>0.4.1.0</FileVersion>
-    <Version>0.4.1.0</Version>
+    <AssemblyVersion>0.4.2.0</AssemblyVersion>
+    <FileVersion>0.4.2.0</FileVersion>
+    <Version>0.4.2.0</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.18.0" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.13" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.19.0" />
+	  <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.13" />
   </ItemGroup>
 	 <PropertyGroup>
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
