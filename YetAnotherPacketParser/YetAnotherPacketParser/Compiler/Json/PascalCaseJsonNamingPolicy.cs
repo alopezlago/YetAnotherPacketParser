@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 namespace YetAnotherPacketParser.Compiler.Json
@@ -14,7 +15,9 @@ namespace YetAnotherPacketParser.Compiler.Json
             Verify.IsNotNull(name, nameof(name));
 
             // Names will not be null or empty
-            return name.Substring(0, 1).ToLowerInvariant() + name.Substring(1);
+            Span<char> firstLetter = new Span<char>(new char[1]);
+            name.AsSpan(0, 1).ToLowerInvariant(firstLetter);
+            return string.Concat(firstLetter, name.AsSpan(1));
         }
     }
 }

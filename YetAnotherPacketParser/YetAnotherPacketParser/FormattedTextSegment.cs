@@ -44,7 +44,7 @@ namespace YetAnotherPacketParser
 
         public override int GetHashCode()
         {
-            return (this.Text?.GetHashCode() ?? 0) ^
+            return (this.Text?.GetHashCode(StringComparison.Ordinal) ?? 0) ^
                 this.Bolded.GetHashCode() ^
                 (this.Italic.GetHashCode() << 1) ^
                 (this.Underlined.GetHashCode() << 2);

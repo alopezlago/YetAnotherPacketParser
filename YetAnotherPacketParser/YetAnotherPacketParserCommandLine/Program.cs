@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -35,20 +36,20 @@ namespace YetAnotherPacketParserCommandLine
 
         private static async Task RunAsync(CommandLineOptions options)
         {
-            if (string.Equals(options.Input, options.Output))
+            if (string.Equals(options.Input, options.Output, StringComparison.OrdinalIgnoreCase))
             {
-                Console.Error.WriteLine("Input and output files must be different");
+                await Console.Error.WriteLineAsync("Input and output files must be different").ConfigureAwait(true);
                 return;
             }
             else if (!File.Exists(options.Input))
             {
-                Console.Error.WriteLine($"File {options.Input} does not exist");
+                await Console.Error.WriteLineAsync($"File {options.Input} does not exist").ConfigureAwait(true);
                 return;
             }
 
             IPacketConverterOptions packetCompilerOptions;
             Action<LogLevel, string> log = (logLevel, message) => Log(options, logLevel, message);
-            switch (options.OutputFormat.Trim().ToUpper())
+            switch (options.OutputFormat.Trim().ToUpper(CultureInfo.CurrentCulture))
             {
                 case "JSON":
                     packetCompilerOptions = new JsonPacketCompilerOptions()
@@ -67,20 +68,20 @@ namespace YetAnotherPacketParserCommandLine
                     };
                     break;
                 default:
-                    Console.Error.WriteLine("Invalid format. Valid formats: json, html");
+                    await Console.Error.WriteLineAsync("Invalid format. Valid formats: json, html").ConfigureAwait(true);
                     return;
             }
 
             IEnumerable<ConvertResult> outputResults;
             using (FileStream fileStream = new FileStream(options.Input, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                outputResults = await PacketConverter.ConvertPacketsAsync(fileStream, packetCompilerOptions);
+                outputResults = await PacketConverter.ConvertPacketsAsync(fileStream, packetCompilerOptions).ConfigureAwait(true);
             }
 
             int resultsCount = outputResults.Count();
             if (resultsCount == 0)
             {
-                Console.Error.WriteLine("No packets found");
+                await Console.Error.WriteLineAsync("No packets found").ConfigureAwait(true);
                 return;
             }
             else if (resultsCount == 1)
@@ -88,7 +89,7 @@ namespace YetAnotherPacketParserCommandLine
                 ConvertResult compileResult = outputResults.First();
                 if (!compileResult.Result.Success)
                 {
-                    Console.Error.WriteLine(compileResult.Result);
+                    await Console.Error.WriteLineAsync(compileResult.Result.ToString()).ConfigureAwait(false);
                     return;
                 }
 
@@ -125,7 +126,8 @@ namespace YetAnotherPacketParserCommandLine
                     .OrderBy(result => result.Filename);
                 foreach (ConvertResult compileResult in failedResults)
                 {
-                    Console.Error.WriteLine($"{compileResult.Filename} failed to compile. Error(s):\n {compileResult.Result}");
+                    await Console.Error.WriteLineAsync($"{compileResult.Filename} failed to compile. Error(s):\n {compileResult.Result}")
+                        .ConfigureAwait(true);
                 }
             }
 
@@ -150,8 +152,8 @@ namespace YetAnotherPacketParserCommandLine
                 foreach (ConvertResult compileResult in packets)
                 {
                     string newFilename = outputFormatIsJson ?
-                        compileResult.Filename.Replace(".docx", ".json") :
-                        compileResult.Filename.Replace(".docx", ".html");
+                        compileResult.Filename.Replace(".docx", ".json", StringComparison.OrdinalIgnoreCase) :
+                        compileResult.Filename.Replace(".docx", ".html", StringComparison.OrdinalIgnoreCase);
                     ZipArchiveEntry entry = outputArchive.CreateEntry(newFilename);
 
                     // We can't do this asynchronously, because it complains about writing to the same ZipArchive stream
@@ -170,7 +172,7 @@ namespace YetAnotherPacketParserCommandLine
             {
                 jsonPackets.Add(new JsonPacket()
                 {
-                    name = compileResult.Filename.Replace(".docx", string.Empty),
+                    name = compileResult.Filename.Replace(".docx", string.Empty, StringComparison.OrdinalIgnoreCase),
                     packet = JsonSerializer.Deserialize<object>(compileResult.Result.Value)
                 });
             }
@@ -200,7 +202,7 @@ namespace YetAnotherPacketParserCommandLine
 
                 // Skip past "<body>"
                 bodyStartIndex += 6;
-                string htmlBody = $"<h2>{compileResult.Filename.Replace(".docx", string.Empty)}</h2>{html.Substring(bodyStartIndex, bodyEndIndex - bodyStartIndex)}";
+                string htmlBody = $"<h2>{compileResult.Filename.Replace(".docx", string.Empty, StringComparison.OrdinalIgnoreCase)}</h2>{html.Substring(bodyStartIndex, bodyEndIndex - bodyStartIndex)}";
 
                 htmlBodies.Add(htmlBody);
             }

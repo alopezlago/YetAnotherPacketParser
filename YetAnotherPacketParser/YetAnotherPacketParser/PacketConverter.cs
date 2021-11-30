@@ -32,7 +32,7 @@ namespace YetAnotherPacketParser
             Verify.IsNotNull(options, nameof(options));
             Verify.IsNotNull(stream, nameof(stream));
 
-            Tuple<bool, Stream> readStreamResult = await MagicWordDetector.IsZipFile(stream);
+            Tuple<bool, Stream> readStreamResult = await MagicWordDetector.IsZipFile(stream).ConfigureAwait(false);
             stream = readStreamResult.Item2;
 
             try
@@ -42,7 +42,7 @@ namespace YetAnotherPacketParser
                     // Assume it's HTML for now, and refactor if we need to support more input formats
                     return new ConvertResult[]
                     {
-                        await CompilePacketAsync(options.StreamName, stream, options, FileType.Html)
+                        await CompilePacketAsync(options.StreamName, stream, options, FileType.Html).ConfigureAwait(false)
                     };
                 }
 

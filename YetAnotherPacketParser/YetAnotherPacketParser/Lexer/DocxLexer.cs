@@ -25,7 +25,7 @@ namespace YetAnotherPacketParser.Lexer
         /// <param name="stream">Stream whose contents are a .docx Microsoft Word file</param>
         /// <returns>If we were unable to open the stream, then the result is a FailureResult. Otherwise, it is a
         /// SuccessResult with a collection of lines from the document.</returns>
-        public Task<IResult<IEnumerable<ILine>>> GetLines(Stream stream)
+        public async Task<IResult<IEnumerable<ILine>>> GetLines(Stream stream)
         {
             Verify.IsNotNull(stream, nameof(stream));
 
@@ -39,32 +39,32 @@ namespace YetAnotherPacketParser.Lexer
                     {
                         IResult<IEnumerable<ILine>> nullBodyLines = new FailureResult<IEnumerable<ILine>>(
                             Strings.UnableToOpenDocx("Couldn't find the body of the document."));
-                        return Task.FromResult(nullBodyLines);
+                        return nullBodyLines;
                     }
 
                     IResult<IEnumerable<ILine>> lines = new SuccessResult<IEnumerable<ILine>>(GetLinesFromBody(body));
-                    return Task.FromResult(lines);
+                    return lines;
                 }
             }
             catch (ArgumentNullException ex)
             {
-                Console.Error.WriteLine(ex);
+                await Console.Error.WriteLineAsync(ex.ToString()).ConfigureAwait(false);
                 IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>(Strings.UnexpectedNullValue);
-                return Task.FromResult(lines);
+                return lines;
             }
             catch (OpenXmlPackageException ex)
             {
-                Console.Error.WriteLine(ex);
+                await Console.Error.WriteLineAsync(ex.ToString()).ConfigureAwait(false);
                 IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>(
                     Strings.UnableToOpenDocx(ex.Message));
-                return Task.FromResult(lines);
+                return lines;
             }
             catch (FileFormatException ex)
             {
-                Console.Error.WriteLine(ex);
+                await Console.Error.WriteLineAsync(ex.ToString()).ConfigureAwait(false);
                 IResult<IEnumerable<ILine>> lines = new FailureResult<IEnumerable<ILine>>(
                     Strings.UnableToOpenDocx(ex.Message));
-                return Task.FromResult(lines);
+                return lines;
             }
         }
 
