@@ -1,5 +1,4 @@
 ﻿using System.IO.Compression;
-using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Primitives;
 using YetAnotherPacketParser;
@@ -44,20 +43,13 @@ namespace YetAnotherPacketParserAPI
                         return GetBadRequest(compileResult.Result.ErrorMessages);
                     }
 
-                    // If it's JSON, we need to parse the JSON so the output isn't treated as a string. It's unfortunate
-                    // we have to do this round-about way of returning a JSON result; I should research a cleaner way to
-                    // do this that doesn't involve extra deserializaiton.
                     if (options.OutputFormat == OutputFormat.Json)
                     {
-                        // Okay to deserialize object in this case since we fully control where the original string came from.
-                        using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(compileResult.Result.Value)))
-                        {
-                            return Results.Json(await JsonSerializer.DeserializeAsync<object>(stream));
-                        }
+                        return Results.Text(compileResult.Result.Value, contentType: "application/json");
                     }
 
                     // TODO: Should we handle the 1-packet zip file case by returning a zip?
-                    return Results.Ok(compileResult.Result.Value);
+                    return Results.Text(compileResult.Result.Value, contentType: "text/html");
                 }
 
                 if (TryGetStringValueFromQuery(request, "mergeMultiple", out string mergeMultipleValue) &&
@@ -75,33 +67,40 @@ namespace YetAnotherPacketParserAPI
                 // as a zip file and JSON array?
                 bool outputFormatIsJson = options.OutputFormat == OutputFormat.Json;
                 IEnumerable<ConvertResult> successResults = results.Where(result => result.Result.Success);
-                using (MemoryStream memoryStream = new MemoryStream())
+
+                // Results.Stream will dispose the MemoryStream
+                MemoryStream memoryStream = new MemoryStream();
+                string contentType = "";
+                if (!mergeMultiple)
                 {
-                    if (!mergeMultiple)
-                    {
-                        WriteMultiplePacketsToZip(successResults, memoryStream, outputFormatIsJson);
-                    }
-                    else if (outputFormatIsJson)
-                    {
-                        WriteMultiplePacketsToJson(successResults, memoryStream);
-                    }
-                    else
-                    {
-                        WriteMultiplePacketsToHtml(successResults, memoryStream);
-                    }
-
-                    log.LogInformation($"Succesfully parsed {successResults.Count()} out of {results.Count()} packets");
-                    IEnumerable<ConvertResult> failedResults = results
-                        .Where(result => !result.Result.Success)
-                        .OrderBy(result => result.Filename);
-                    foreach (ConvertResult compileResult in failedResults)
-                    {
-                        log.LogWarning($"{compileResult.Filename} failed to compile.");
-                    }
-
-                    await memoryStream.FlushAsync();
-                    return Results.Stream(memoryStream, fileDownloadName: options.StreamName);
+                    contentType = "application/zip";
+                    WriteMultiplePacketsToZip(successResults, memoryStream, outputFormatIsJson);
                 }
+                else if (outputFormatIsJson)
+                {
+                    contentType = "application/json";
+                    WriteMultiplePacketsToJson(successResults, memoryStream);
+                }
+                else
+                {
+                    contentType = "text/html";
+                    WriteMultiplePacketsToHtml(successResults, memoryStream);
+                }
+
+                log.LogInformation($"Succesfully parsed {successResults.Count()} out of {results.Count()} packets");
+                IEnumerable<ConvertResult> failedResults = results
+                    .Where(result => !result.Result.Success)
+                    .OrderBy(result => result.Filename);
+                foreach (ConvertResult compileResult in failedResults)
+                {
+                    log.LogWarning($"{compileResult.Filename} failed to compile.");
+                }
+
+                // Finish the write and reset the stream
+                await memoryStream.FlushAsync();
+                memoryStream.Position = 0;
+
+                return Results.Stream(memoryStream, contentType: contentType, fileDownloadName: options.StreamName);
             }
         }
 
@@ -244,7 +243,7 @@ namespace YetAnotherPacketParserAPI
 
             string content = JsonSerializer.Serialize(jsonPackets);
 
-            using (StreamWriter writer = new StreamWriter(stream))
+            using (StreamWriter writer = new StreamWriter(stream, leaveOpen: true))
             {
                 writer.Write(content);
             }
@@ -273,7 +272,7 @@ namespace YetAnotherPacketParserAPI
 
             string bundledHtml = $"<html><body>{string.Join("<br>", htmlBodies)}</body></html>";
 
-            using (StreamWriter writer = new StreamWriter(stream))
+            using (StreamWriter writer = new StreamWriter(stream, leaveOpen: true))
             {
                 writer.Write(bundledHtml);
             }
@@ -282,7 +281,7 @@ namespace YetAnotherPacketParserAPI
         private static void WriteMultiplePacketsToZip(
             IEnumerable<ConvertResult> packets, Stream stream, bool outputFormatIsJson)
         {
-            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Create))
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
             {
                 foreach (ConvertResult compileResult in packets)
                 {
