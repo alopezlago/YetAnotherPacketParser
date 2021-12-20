@@ -15,11 +15,16 @@
 	<EnableNETAnalyzers>true</EnableNETAnalyzers>
 	<AnalysisMode>Recommended</AnalysisMode>
 	<AnalysisModeSecurity>All</AnalysisModeSecurity>
+	<ApplicationIcon>YAPP.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <WarningLevel>5</WarningLevel>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="YAPP.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
