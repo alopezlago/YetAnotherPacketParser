@@ -115,7 +115,13 @@ namespace YetAnotherPacketParserAPI
 
                 if (version >= 2)
                 {
-                    ZipResponse response = new ZipResponse(contentType, Encoding.UTF8.GetString(memoryStream.ToArray()), errors, successResults.Count());
+                    // If the output is a zip-file, base64 encode the response since it may have null or unprintable
+                    // characters that make it difficult for clients to consume
+                    // We don't need to do this for JSON or HTML, which are regular strings
+                    string result = !mergeMultiple ?
+                        Convert.ToBase64String(memoryStream.ToArray()) :
+                        Encoding.UTF8.GetString(memoryStream.ToArray());
+                    ZipResponse response = new ZipResponse(contentType, result, errors, successResults.Count());
                     await memoryStream.DisposeAsync();
                     return Results.Json(response);
                 }
@@ -317,6 +323,26 @@ namespace YetAnotherPacketParserAPI
                     }
                 }
             }
+        }
+
+        private class ZipResponse
+        {
+            public ZipResponse(
+                string contentType, string result, Dictionary<string, IEnumerable<string>> errors, int successCount)
+            {
+                this.ContentType = contentType;
+                this.Result = result;
+                this.Errors = errors;
+                this.SuccessCount = successCount;
+            }
+
+            public string ContentType { get; }
+
+            public string Result { get; }
+
+            public int SuccessCount { get; }
+
+            public Dictionary<string, IEnumerable<string>> Errors { get; }
         }
 
         private class ZipResponse
