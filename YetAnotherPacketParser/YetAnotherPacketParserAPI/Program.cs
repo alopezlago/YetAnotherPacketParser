@@ -1,4 +1,5 @@
 using AspNetCoreRateLimit;
+using Microsoft.AspNetCore.HttpLogging;
 using YetAnotherPacketParserAPI;
 
 const int MaximumRequestInBytes = 1 * 1024 * 1024; // 1 MB
@@ -24,6 +25,11 @@ builder.Services.AddInMemoryRateLimiting();
 
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields = HttpLoggingFields.RequestPropertiesAndHeaders | HttpLoggingFields.ResponsePropertiesAndHeaders | HttpLoggingFields.ResponseStatusCode;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -37,6 +43,8 @@ app.UseHttpsRedirection();
 app.UseHsts();
 app.UseResponseCaching();
 app.UseIpRateLimiting();
+
+app.UseHttpLogging();
 
 app.UseCors();
 

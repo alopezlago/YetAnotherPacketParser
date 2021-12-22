@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Primitives;
 using YetAnotherPacketParser;
@@ -59,12 +60,22 @@ namespace YetAnotherPacketParserAPI
                 }
                 else
                 {
+                    log.LogInformation("Default mergeMultiple (false)");
                     mergeMultiple = false;
                 }
 
+                if (TryGetStringValueFromQuery(request, "version", out string versionValue) &&
+                    int.TryParse(versionValue, out int version))
+                {
+                    log.LogInformation($"Passed in version: {version}");
+                }
+                else
+                {
+                    log.LogInformation($"Default version (1)");
+                    version = 1;
+                }
+
                 // We have a zip file. Return one, or return a merged file if requested.
-                // TODO: See if we can return a JSON result showing success, # successfully parsed packets, and the contents
-                // as a zip file and JSON array?
                 bool outputFormatIsJson = options.OutputFormat == OutputFormat.Json;
                 IEnumerable<ConvertResult> successResults = results.Where(result => result.Result.Success);
 
@@ -91,14 +102,29 @@ namespace YetAnotherPacketParserAPI
                 IEnumerable<ConvertResult> failedResults = results
                     .Where(result => !result.Result.Success)
                     .OrderBy(result => result.Filename);
+                Dictionary<string, IEnumerable<string>> errors = new Dictionary<string, IEnumerable<string>>();
                 foreach (ConvertResult compileResult in failedResults)
                 {
+                    errors[compileResult.Filename] = compileResult.Result.ErrorMessages;
                     log.LogWarning($"{compileResult.Filename} failed to compile.");
                 }
 
                 // Finish the write and reset the stream
                 await memoryStream.FlushAsync();
                 memoryStream.Position = 0;
+
+                if (version >= 2)
+                {
+                    // If the output is a zip-file, base64 encode the response since it may have null or unprintable
+                    // characters that make it difficult for clients to consume
+                    // We don't need to do this for JSON or HTML, which are regular strings
+                    string result = !mergeMultiple ?
+                        Convert.ToBase64String(memoryStream.ToArray()) :
+                        Encoding.UTF8.GetString(memoryStream.ToArray());
+                    ZipResponse response = new ZipResponse(contentType, result, errors, successResults.Count());
+                    await memoryStream.DisposeAsync();
+                    return Results.Json(response);
+                }
 
                 return Results.Stream(memoryStream, contentType: contentType, fileDownloadName: options.StreamName);
             }
@@ -297,6 +323,46 @@ namespace YetAnotherPacketParserAPI
                     }
                 }
             }
+        }
+
+        private class ZipResponse
+        {
+            public ZipResponse(
+                string contentType, string result, Dictionary<string, IEnumerable<string>> errors, int successCount)
+            {
+                this.ContentType = contentType;
+                this.Result = result;
+                this.Errors = errors;
+                this.SuccessCount = successCount;
+            }
+
+            public string ContentType { get; }
+
+            public string Result { get; }
+
+            public int SuccessCount { get; }
+
+            public Dictionary<string, IEnumerable<string>> Errors { get; }
+        }
+
+        private class ZipResponse
+        {
+            public ZipResponse(
+                string contentType, string result, Dictionary<string, IEnumerable<string>> errors, int successCount)
+            {
+                this.ContentType = contentType;
+                this.Result = result;
+                this.Errors = errors;
+                this.SuccessCount = successCount;
+            }
+
+            public string ContentType { get; }
+
+            public string Result { get; }
+
+            public int SuccessCount { get; }
+
+            public Dictionary<string, IEnumerable<string>> Errors { get; }
         }
     }
 }
