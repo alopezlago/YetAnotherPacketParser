@@ -1,6 +1,6 @@
 ﻿namespace YetAnotherPacketParser.Lexer
 {
-    public class AnswerLine : ILine
+    internal class AnswerLine : ILine
     {
         public AnswerLine(FormattedText text)
         {

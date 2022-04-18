@@ -6,7 +6,7 @@ using YetAnotherPacketParser.Ast;
 
 namespace YetAnotherPacketParser.Compiler.Html
 {
-    public class HtmlCompiler : ICompiler
+    internal class HtmlCompiler : ICompiler
     {
         public Task<string> CompileAsync(PacketNode packet)
         {

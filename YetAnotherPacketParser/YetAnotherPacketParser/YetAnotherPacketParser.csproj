@@ -17,17 +17,17 @@
     <PackageTags>quizbowl packetparser quizbowlpacketparser</PackageTags>
     <PackageProjectUrl>https://github.com/alopezlago/YetAnotherPacketParser</PackageProjectUrl>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-    <AssemblyVersion>0.4.2.0</AssemblyVersion>
-    <FileVersion>0.4.2.0</FileVersion>
-    <Version>0.4.2.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.0.0</Version>
 	<EnableNETAnalyzers>true</EnableNETAnalyzers>
 	<AnalysisMode>Recommended</AnalysisMode>
 	<AnalysisModeSecurity>All</AnalysisModeSecurity>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DocumentFormat.OpenXml" Version="2.13.1" />
-    <PackageReference Include="HtmlSanitizer" Version="6.0.453" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="2.16.0" />
+    <PackageReference Include="HtmlSanitizer" Version="7.1.488" />
   </ItemGroup>
 
   <ItemGroup>

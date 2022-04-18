@@ -344,25 +344,5 @@ namespace YetAnotherPacketParserAPI
 
             public Dictionary<string, IEnumerable<string>> Errors { get; }
         }
-
-        private class ZipResponse
-        {
-            public ZipResponse(
-                string contentType, string result, Dictionary<string, IEnumerable<string>> errors, int successCount)
-            {
-                this.ContentType = contentType;
-                this.Result = result;
-                this.Errors = errors;
-                this.SuccessCount = successCount;
-            }
-
-            public string ContentType { get; }
-
-            public string Result { get; }
-
-            public int SuccessCount { get; }
-
-            public Dictionary<string, IEnumerable<string>> Errors { get; }
-        }
     }
 }

@@ -16,6 +16,7 @@ namespace YetAnotherPacketParser
     // TODO: make this easier to unit test. That requires making CompilePacketAsync accessible or mockable.
     public static class PacketConverter
     {
+        /// <exception cref="System.ArgumentNullException">If <c>stream</c> or <c>options</c> is <c>null</c>.</exception>
         /// <summary>
         /// Converts the file encoded in the stream to a packet in the output format specified in the options
         /// </summary>
@@ -23,8 +24,31 @@ namespace YetAnotherPacketParser
         /// or a zip file containing .docx files.</param>
         /// <param name="options">Options for converting the packets, such as the output format and the maximum size
         /// of packets.</param>
-        /// <returns>An enumerable of the converted results. If conversion succeeded, the element will have a string
-        /// of the packet in the requested format. If conversion failed, the element will have an error message explaining
+        /// <returns>If conversion succeeded, then this returns the packet in the requested format. If conversion
+        /// failed, then the element will have an error message explaining the cause of the failure.</returns>
+        /// <remarks>This has undefined behavior if a non-.docx zip file is passed in.</remarks>
+        public static async Task<ConvertResult> ConvertPacketAsync(Stream stream, IPacketConverterOptions options)
+        {
+            IEnumerable<ConvertResult> results = await ConvertPacketsAsync(stream, options);
+            ConvertResult result = results.FirstOrDefault();
+            if (result == null)
+            {
+                return new ConvertResult(string.Empty, new FailureResult<string>("No packet was found"));
+            }
+
+            return result;
+        }
+
+        /// <exception cref="System.ArgumentNullException">If <c>stream</c> or <c>options</c> is <c>null</c>.</exception>
+        /// <summary>
+        /// Converts the file encoded in the stream to a packet in the output format specified in the options
+        /// </summary>
+        /// <param name="stream">Stream representing the packet. This can either represent a .docx Microsoft Word file
+        /// or a zip file containing .docx files.</param>
+        /// <param name="options">Options for converting the packets, such as the output format and the maximum size
+        /// of packets.</param>
+        /// <returns>An enumerable of the converted results. If conversion succeeded, then the element will have a string
+        /// of the packet in the requested format. If conversion failed, then the element will have an error message explaining
         /// the cause of the failure.</returns>
         public static async Task<IEnumerable<ConvertResult>> ConvertPacketsAsync(
             Stream stream, IPacketConverterOptions options)
@@ -155,10 +179,7 @@ namespace YetAnotherPacketParser
 
             options.Log?.Invoke(LogLevel.Verbose, Strings.LexingComplete(packetName));
 
-            LinesParserOptions parserOptions = new LinesParserOptions()
-            {
-            };
-            LinesParser parser = new LinesParser(parserOptions);
+            LinesParser parser = new LinesParser();
             IResult<PacketNode> packetNodeResult = parser.Parse(linesResult.Value);
 
             long timeInMsParse = stopwatch.ElapsedMilliseconds;

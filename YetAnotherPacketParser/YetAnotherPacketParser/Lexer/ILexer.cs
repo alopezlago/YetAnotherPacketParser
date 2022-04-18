@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace YetAnotherPacketParser.Lexer
 {
-    public interface ILexer
+    internal interface ILexer
     {
         Task<IResult<IEnumerable<ILine>>> GetLines(Stream stream);
     }

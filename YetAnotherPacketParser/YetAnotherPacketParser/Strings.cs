@@ -4,7 +4,7 @@ using YetAnotherPacketParser.Lexer;
 
 namespace YetAnotherPacketParser
 {
-    public static class Strings
+    internal static class Strings
     {
         // TODO: Add the rest of the strings from PacketConverter (10 strings)
 

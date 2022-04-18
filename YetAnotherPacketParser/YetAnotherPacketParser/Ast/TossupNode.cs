@@ -2,7 +2,7 @@
 
 namespace YetAnotherPacketParser.Ast
 {
-    public class TossupNode
+    internal class TossupNode
     {
         public TossupNode(int number, QuestionNode question, string? metadata = null)
         {

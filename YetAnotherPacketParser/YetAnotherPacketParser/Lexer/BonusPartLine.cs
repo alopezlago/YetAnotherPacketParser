@@ -1,6 +1,6 @@
 ﻿namespace YetAnotherPacketParser.Lexer
 {
-    public class BonusPartLine : ILine
+    internal class BonusPartLine : ILine
     {
         public BonusPartLine(FormattedText text, int value, char? difficultyModifier)
         {

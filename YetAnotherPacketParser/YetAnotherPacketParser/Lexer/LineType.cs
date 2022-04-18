@@ -1,6 +1,6 @@
 ﻿namespace YetAnotherPacketParser.Lexer
 {
-    public enum LineType
+    internal enum LineType
     {
         Unclassified,
         Answer,

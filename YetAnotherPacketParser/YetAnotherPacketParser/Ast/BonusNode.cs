@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace YetAnotherPacketParser.Ast
 {
-    public class BonusNode
+    internal class BonusNode
     {
         public BonusNode(
             int number, FormattedText leadin, IEnumerable<BonusPartNode> parts, string? metadata)

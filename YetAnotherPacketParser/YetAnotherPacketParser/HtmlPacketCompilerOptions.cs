@@ -22,8 +22,16 @@ namespace YetAnotherPacketParser
 
         public int MaximumPacketSizeInBytes { get; set; }
 
+        /// <exception cref="System.NotSupportedException"></exception>
+        /// <summary>
+        /// Not supported.
+        /// </summary>
         public bool ModaqFormat => throw new NotSupportedException();
 
+        /// <exception cref="System.NotSupportedException"></exception>
+        /// <summary>
+        /// Not supported.
+        /// </summary>
         public bool PrettyPrint => throw new NotSupportedException();
 
         public Action<LogLevel, string>? Log { get; set; }

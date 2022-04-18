@@ -6,7 +6,7 @@ using YetAnotherPacketParser.Ast;
 
 namespace YetAnotherPacketParser.Compiler
 {
-    public class SanitizeHtmlTransformer
+    internal class SanitizeHtmlTransformer
     {
         private const int MaxCachedFragmentLength = 10;
 

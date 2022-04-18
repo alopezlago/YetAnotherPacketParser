@@ -2,7 +2,7 @@
 
 namespace YetAnotherPacketParser.Ast
 {
-    public class QuestionNode
+    internal class QuestionNode
     {
         public QuestionNode(FormattedText question, FormattedText answer)
         {
