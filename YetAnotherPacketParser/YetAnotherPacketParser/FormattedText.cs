@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace YetAnotherPacketParser
 {
-    public class FormattedText
+    internal class FormattedText
     {
         public FormattedText(IEnumerable<FormattedTextSegment> formattedTexts)
         {

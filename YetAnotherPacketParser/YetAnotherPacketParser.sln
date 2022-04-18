@@ -9,9 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetAnotherPacketParserComma
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetAnotherPacketParserTests", "YetAnotherPacketParserTests\YetAnotherPacketParserTests.csproj", "{811B7F2E-1E9C-486C-9B26-62B99C239CE0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetAnotherPacketParserAzureFunction", "YetAnotherPacketParserAzureFunction\YetAnotherPacketParserAzureFunction.csproj", "{B594E98C-9772-40F8-93BA-F641AE397140}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YetAnotherPacketParserAPI", "YetAnotherPacketParserAPI\YetAnotherPacketParserAPI.csproj", "{90AD57C5-763C-494E-AE92-F90BB0BB5A88}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetAnotherPacketParserAPI", "YetAnotherPacketParserAPI\YetAnotherPacketParserAPI.csproj", "{90AD57C5-763C-494E-AE92-F90BB0BB5A88}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,10 +29,6 @@ Global
 		{811B7F2E-1E9C-486C-9B26-62B99C239CE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{811B7F2E-1E9C-486C-9B26-62B99C239CE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{811B7F2E-1E9C-486C-9B26-62B99C239CE0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B594E98C-9772-40F8-93BA-F641AE397140}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B594E98C-9772-40F8-93BA-F641AE397140}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B594E98C-9772-40F8-93BA-F641AE397140}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B594E98C-9772-40F8-93BA-F641AE397140}.Release|Any CPU.Build.0 = Release|Any CPU
 		{90AD57C5-763C-494E-AE92-F90BB0BB5A88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{90AD57C5-763C-494E-AE92-F90BB0BB5A88}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90AD57C5-763C-494E-AE92-F90BB0BB5A88}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -6,7 +6,7 @@ using YetAnotherPacketParser.Ast;
 
 namespace YetAnotherPacketParser.Compiler.Json
 {
-    public class JsonCompiler : ICompiler
+    internal class JsonCompiler : ICompiler
     {
         public JsonCompiler(JsonCompilerOptions? options = null)
         {

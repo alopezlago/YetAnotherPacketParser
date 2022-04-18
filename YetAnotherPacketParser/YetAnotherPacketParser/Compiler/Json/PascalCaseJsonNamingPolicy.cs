@@ -4,12 +4,8 @@ using System.Text.Json;
 
 namespace YetAnotherPacketParser.Compiler.Json
 {
-    public class PascalCaseJsonNamingPolicy : JsonNamingPolicy
+    internal class PascalCaseJsonNamingPolicy : JsonNamingPolicy
     {
-        [SuppressMessage(
-            "Globalization",
-            "CA1308:Normalize strings to uppercase",
-            Justification = "Pascal case requires lowercasing strings")]
         public override string ConvertName(string name)
         {
             Verify.IsNotNull(name, nameof(name));

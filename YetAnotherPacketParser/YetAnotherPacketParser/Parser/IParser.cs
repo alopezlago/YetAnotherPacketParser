@@ -4,7 +4,7 @@ using YetAnotherPacketParser.Lexer;
 
 namespace YetAnotherPacketParser.Parser
 {
-    public interface IParser
+    internal interface IParser
     {
         IResult<PacketNode> Parse(IEnumerable<ILine> lines);
     }

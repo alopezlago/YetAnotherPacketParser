@@ -2,7 +2,7 @@
 
 namespace YetAnotherPacketParser.Ast
 {
-    public class BonusPartNode
+    internal class BonusPartNode
     {
         public BonusPartNode(QuestionNode question, int value, char? difficultyModifier)
         {

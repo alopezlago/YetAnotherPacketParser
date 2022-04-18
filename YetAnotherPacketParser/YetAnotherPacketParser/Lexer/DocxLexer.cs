@@ -10,7 +10,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace YetAnotherPacketParser.Lexer
 {
-    public class DocxLexer : ILexer
+    internal class DocxLexer : ILexer
     {
         // No part should be greater than 2 million characters
         private const int MaximumCharactersInPart = 2 * 1024 * 1024;

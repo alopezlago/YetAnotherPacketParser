@@ -2,7 +2,7 @@
 
 namespace YetAnotherPacketParser
 {
-    public class FormattedTextSegment
+    internal class FormattedTextSegment
     {
         public FormattedTextSegment(string text, bool italic = false, bool bolded = false, bool underlined = false)
         {

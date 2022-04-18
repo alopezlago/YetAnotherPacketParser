@@ -24,7 +24,6 @@ namespace YetAnotherPacketParser
 
         public int MaximumPacketSizeInBytes { get; set; }
 
-        // Only emit the fields MODAQ uses, e.g. remove all the *_sanitized fields
         public bool ModaqFormat { get; set; }
 
         public bool PrettyPrint { get; set; }

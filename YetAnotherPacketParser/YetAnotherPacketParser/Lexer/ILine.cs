@@ -1,6 +1,6 @@
 ﻿namespace YetAnotherPacketParser.Lexer
 {
-    public interface ILine
+    internal interface ILine
     {
         public LineType Type { get; }
 

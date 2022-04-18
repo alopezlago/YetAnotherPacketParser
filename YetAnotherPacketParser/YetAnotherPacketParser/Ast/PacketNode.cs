@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace YetAnotherPacketParser.Ast
 {
-    public class PacketNode
+    internal class PacketNode
     {
         public PacketNode(IEnumerable<TossupNode> tossups, IEnumerable<BonusNode>? bonuses)
         {

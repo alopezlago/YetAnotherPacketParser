@@ -8,22 +8,10 @@ using YetAnotherPacketParser.Lexer;
 
 namespace YetAnotherPacketParser.Parser
 {
-    public class LinesParser : IParser
+    internal class LinesParser : IParser
     {
         private const int FailureSnippetCharacterLimit = 40;
         private const int MaximumFailureMessagesPerSection = 10;
-
-        public LinesParser(LinesParserOptions? options = null)
-        {
-            if (options == null)
-            {
-                options = LinesParserOptions.Default;
-            }
-
-            this.Options = options;
-        }
-
-        public LinesParserOptions Options { get; }
 
         /// <summary>
         /// Converts the list of lines into an abstract syntax tree, with the PacketNode as a root.

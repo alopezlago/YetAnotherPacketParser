@@ -3,7 +3,7 @@ using YetAnotherPacketParser.Ast;
 
 namespace YetAnotherPacketParser.Compiler
 {
-    public interface ICompiler
+    internal interface ICompiler
     {
         /// <summary>
         /// Convert the packet into the output format

@@ -1,6 +1,6 @@
 ﻿namespace YetAnotherPacketParser.Lexer
 {
-    public class NumberedQuestionLine : ILine
+    internal class NumberedQuestionLine : ILine
     {
         public NumberedQuestionLine(FormattedText text, int number)
         {
