@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ganss.XSS;
+using AngleSharp.Css.Dom;
+using Ganss.Xss;
 using YetAnotherPacketParser.Ast;
 
 namespace YetAnotherPacketParser.Compiler
@@ -13,12 +14,18 @@ namespace YetAnotherPacketParser.Compiler
         public SanitizeHtmlTransformer()
         {
             // Packet text should have no HTML (tags, CSS, styles, etc.)
+            HashSet<string> emptySet = new HashSet<string>();
             this.Sanitizer = new HtmlSanitizer(
-                Array.Empty<string>(),
-                Array.Empty<string>(),
-                Array.Empty<string>(),
-                Array.Empty<string>(),
-                Array.Empty<string>());
+                new HtmlSanitizerOptions()
+                {
+                    AllowedAtRules = new HashSet<CssRuleType>(),
+                    AllowedAttributes = emptySet,
+                    AllowedCssClasses = emptySet,
+                    AllowedCssProperties = emptySet,
+                    AllowedSchemes = emptySet,
+                    AllowedTags = emptySet,
+                }
+                );
             this.CachedShortSegments = new Dictionary<string, string>();
         }
 

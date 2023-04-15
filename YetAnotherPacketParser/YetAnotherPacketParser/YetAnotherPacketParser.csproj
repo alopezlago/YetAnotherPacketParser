@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <AssemblyName>YetAnotherPacketParser</AssemblyName>
     <Description>Yet Another Packet Parser parses .docx quiz bowl packets and translates them to different formats like JSON or HTML</Description>
@@ -17,17 +17,17 @@
     <PackageTags>quizbowl packetparser quizbowlpacketparser</PackageTags>
     <PackageProjectUrl>https://github.com/alopezlago/YetAnotherPacketParser</PackageProjectUrl>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <Version>1.0.0.0</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <Version>1.0.1.0</Version>
 	<EnableNETAnalyzers>true</EnableNETAnalyzers>
 	<AnalysisMode>Recommended</AnalysisMode>
 	<AnalysisModeSecurity>All</AnalysisModeSecurity>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DocumentFormat.OpenXml" Version="2.16.0" />
-    <PackageReference Include="HtmlSanitizer" Version="7.1.488" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="2.20.0" />
+    <PackageReference Include="HtmlSanitizer" Version="8.0.645" />
   </ItemGroup>
 
   <ItemGroup>

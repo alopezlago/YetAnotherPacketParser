@@ -30,7 +30,7 @@ namespace YetAnotherPacketParser
         public static async Task<ConvertResult> ConvertPacketAsync(Stream stream, IPacketConverterOptions options)
         {
             IEnumerable<ConvertResult> results = await ConvertPacketsAsync(stream, options);
-            ConvertResult result = results.FirstOrDefault();
+            ConvertResult? result = results.FirstOrDefault();
             if (result == null)
             {
                 return new ConvertResult(string.Empty, new FailureResult<string>("No packet was found"));
