@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using YetAnotherPacketParser.Ast;
 
@@ -34,7 +35,7 @@ namespace YetAnotherPacketParser.Compiler.Json
                     AllowTrailingCommas = true,
                     PropertyNamingPolicy = new PascalCaseJsonNamingPolicy(),
                     WriteIndented = this.Options.PrettyPrint,
-                    IgnoreNullValues = true
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 };
 
                 // TODO: If we decide to host this directly in an ASP.Net context, remove ConfigureAwait calls

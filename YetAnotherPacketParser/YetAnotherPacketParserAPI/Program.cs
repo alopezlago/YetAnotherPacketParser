@@ -1,5 +1,6 @@
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.HttpLogging;
+using Serilog;
 using YetAnotherPacketParserAPI;
 
 const int MaximumRequestInBytes = 1 * 1024 * 1024; // 1 MB
@@ -30,6 +31,23 @@ builder.Services.AddHttpLogging(options =>
     options.LoggingFields = HttpLoggingFields.RequestPropertiesAndHeaders | HttpLoggingFields.ResponsePropertiesAndHeaders | HttpLoggingFields.ResponseStatusCode;
 });
 
+builder.Logging.AddEventLog(new Microsoft.Extensions.Logging.EventLog.EventLogSettings()
+{
+    LogName = "YAPP",
+    SourceName = "YAPP"
+});
+builder.Logging.AddEventSourceLogger();
+
+
+Log.Logger = new LoggerConfiguration()
+    .CreateLogger();
+builder.Host.UseSerilog((hostContext, services, configuration) =>
+    configuration
+        .ReadFrom.Configuration(hostContext.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .WriteTo.Console());
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -44,6 +62,7 @@ app.UseHsts();
 app.UseResponseCaching();
 app.UseIpRateLimiting();
 
+app.UseSerilogRequestLogging();
 app.UseHttpLogging();
 
 app.UseCors();
