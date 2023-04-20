@@ -65,7 +65,7 @@ app.UseIpRateLimiting();
 app.UseSerilogRequestLogging();
 app.UseHttpLogging();
 
-app.UseCors();
+app.UseCors(policyBuilder => policyBuilder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
 // Add a basic GET method to test that the service is up
 app.MapGet("/api/get", () => "1");
@@ -82,7 +82,7 @@ app.MapPost("/api/parse", async (HttpContext context) =>
         return await ParseProcessor.Parse(context.Request, app.Logger);
     })
     .WithName("Parse")
-    .RequireCors(policy => policy.AllowAnyOrigin())
+    .RequireCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader())
     .Produces<ErrorMessageResponse>(400)
     .Produces<JsonPacketItem[]>(200)
     .Produces<object>(200);
