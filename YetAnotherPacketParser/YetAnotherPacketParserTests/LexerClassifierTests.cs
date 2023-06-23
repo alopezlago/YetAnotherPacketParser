@@ -6,6 +6,8 @@ namespace YetAnotherPacketParserTests
     [TestClass]
     public class LexerClassifierTests
     {
+        // TODO: Need test for [e]/[h]/[m] tags!
+
         [TestMethod]
         public void TextMatchesAnswer()
         {
@@ -102,6 +104,30 @@ namespace YetAnotherPacketParserTests
         public void TextMatchesBonusPartHardDifficultyModifier()
         {
             VerifyStartsWithBonusPart("[15h]", 15, 'h');
+        }
+
+        [TestMethod]
+        public void TextMatchesBonusPartOnlyEasyDifficultyModifier()
+        {
+            VerifyStartsWithBonusPart("[e]", 10, 'e');
+        }
+
+        [TestMethod]
+        public void TextMatchesBonusPartOnlyMediumDifficultyModifier()
+        {
+            VerifyStartsWithBonusPart("[m]", 10, 'm');
+        }
+
+        [TestMethod]
+        public void TextMatchesBonusPartOnlyHardDifficultyModifier()
+        {
+            VerifyStartsWithBonusPart("[h]", 10, 'h');
+        }
+
+        [TestMethod]
+        public void NonBonusPartNotMatchesOnlyUnknownDifficultyModifier()
+        {
+            VerifyDoesNotStartWithBonusPart("[u]");
         }
 
         [TestMethod]

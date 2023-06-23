@@ -5,6 +5,7 @@ namespace YetAnotherPacketParser.Lexer
 {
     internal static class LexerClassifier
     {
+        private const int DefaultBonusPartValue = 10;
         // Include spaces after the start tag so we get all of the spaces in a match, and we can avoid having to trim
         // them manually.
         private static readonly Regex AnswerRegEx = new Regex(
@@ -12,7 +13,7 @@ namespace YetAnotherPacketParser.Lexer
         private static readonly Regex QuestionDigitRegEx = new Regex(
             "^\\s*(\\d+|tb|tie(breaker)?)\\s*\\.\\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex BonusPartValueRegex = new Regex(
-            "^\\s*\\[\\s*(\\d)+\\s*[ehm]?\\s*\\]\\s*", RegexOptions.Compiled);
+            "^\\s*\\[(\\s*(\\d)+\\s*[ehm]?\\s*|\\s*[ehm]\\s*)\\]\\s*", RegexOptions.Compiled);
         private static readonly Regex PostQuestionMetadataRegex = new Regex(
             "^\\s*<(\\w|\\d|\\s|-|:|,)+(,(\\w|\\d|\\s|-|:|,)+)?>\\s*", RegexOptions.Compiled);
 
@@ -68,7 +69,6 @@ namespace YetAnotherPacketParser.Lexer
                 .Replace("]", string.Empty, StringComparison.Ordinal)
                 .Trim();
 
-
             // If there's a difficulty modifier at the last character, include it. It's optional.
             char lastLetter = partValueText[^1];
             if (char.IsLetter(lastLetter))
@@ -77,12 +77,19 @@ namespace YetAnotherPacketParser.Lexer
                 partValueText = partValueText.Substring(0, partValueText.Length - 1);
             }
 
-            if (!int.TryParse(partValueText, out int value))
+            if (partValueText.Length == 0)
+            {
+                partValue = DefaultBonusPartValue;
+            }
+            else if (int.TryParse(partValueText, out int value))
+            {
+                partValue = value;
+            }
+            else
             {
                 return false;
             }
 
-            partValue = value;
             return true;
         }
 
