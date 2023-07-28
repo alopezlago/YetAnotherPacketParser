@@ -1,9 +1,12 @@
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Serilog;
 using YetAnotherPacketParserAPI;
 
-const int MaximumRequestInBytes = 1 * 1024 * 1024; // 1 MB
+// packets are about 80 KB, so 8 kb/s should finish it in 10 seconds
+MinDataRate minDataRate = new MinDataRate(8 * 1024, TimeSpan.FromSeconds(3));
+const int MaximumRequestInBytes = 2 * 1024 * 1024; // 2 MB
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +20,14 @@ builder.Services.AddCors();
 // Needed for rate-limiting
 builder.Services.AddOptions();
 builder.Services.AddMemoryCache();
+
+// Prevent certain denial-of-service attacks
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(5);
+    options.Limits.MinRequestBodyDataRate = minDataRate;
+    options.Limits.MinResponseDataRate = minDataRate;
+});
 
 // Load rate-limiting configuration from appsettings.json
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));

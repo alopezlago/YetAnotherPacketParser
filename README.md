@@ -59,6 +59,6 @@ Note that the method can take in a zip file too, and it will return all of the p
 ## Development
 
 ### Requirements:
-- [.Net Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1)
+- [.Net 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
   - If using Visual Studio, you need Visual Studio 2017.5
   - Nuget packages should be automatically downloaded by running `dotnet build` or through `dotnet restore`
