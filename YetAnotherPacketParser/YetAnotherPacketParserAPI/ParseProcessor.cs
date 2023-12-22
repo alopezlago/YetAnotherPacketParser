@@ -211,13 +211,13 @@ namespace YetAnotherPacketParserAPI
                     };
                 default:
                     // Treat it as JSON and log an error
-                    log.LogError($"Unrecognized OutputFormat: {outputFormat}");
                     return new JsonPacketCompilerOptions()
                     {
                         StreamName = "Request",
                         PrettyPrint = prettyPrint,
                         MaximumPackets = MaximumPackets,
                         MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
+                        ModaqFormat = modaqFormat,
                         Log = logMessage
                     };
             }
