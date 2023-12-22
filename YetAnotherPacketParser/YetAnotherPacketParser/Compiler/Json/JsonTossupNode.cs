@@ -4,19 +4,19 @@ namespace YetAnotherPacketParser.Compiler.Json
 {
     internal class JsonTossupNode
     {
-        public JsonTossupNode(TossupNode node, bool modaqFormat)
+        public JsonTossupNode(TossupNode node, bool omitSanitizedFields)
         {
-            if (!modaqFormat)
+            if (!omitSanitizedFields)
             {
                 this.Number = node.Number;
             }
 
             this.Question = JsonTextFormatter.ToStringWithTags(node.Question.Question);
-            this.Question_sanitized = modaqFormat ?
+            this.Question_sanitized = omitSanitizedFields ?
                 null :
                 JsonTextFormatter.ToStringWithoutTags(node.Question.Question);
             this.Answer = JsonTextFormatter.ToStringWithTags(node.Question.Answer);
-            this.Answer_sanitized = modaqFormat ?
+            this.Answer_sanitized = omitSanitizedFields ?
                 null :
                 JsonTextFormatter.ToStringWithoutTags(node.Question.Answer);
             this.Metadata = node.Metadata;

@@ -6,22 +6,22 @@ namespace YetAnotherPacketParser.Compiler.Json
 {
     internal class JsonBonusNode
     {
-        public JsonBonusNode(BonusNode bonusNode, bool includeSanitizedFields)
+        public JsonBonusNode(BonusNode bonusNode, bool omitSanitizedFields)
         {
             this.Leadin = JsonTextFormatter.ToStringWithTags(bonusNode.Leadin);
-            this.Leadin_sanitized = includeSanitizedFields ?
-                JsonTextFormatter.ToStringWithoutTags(bonusNode.Leadin) :
-                null;
+            this.Leadin_sanitized = omitSanitizedFields ?
+                null :
+                JsonTextFormatter.ToStringWithoutTags(bonusNode.Leadin);
 
             IEnumerable<BonusPartNode> partNodes = bonusNode.Parts;
             this.Answers = new List<string>();
-            this.Answers_sanitized = includeSanitizedFields ?
-                new List<string>() :
-                null;
+            this.Answers_sanitized = omitSanitizedFields ?
+                null :
+                new List<string>();
             this.Parts = new List<string>();
-            this.Parts_sanitized = includeSanitizedFields ?
-                new List<string>() :
-                null;
+            this.Parts_sanitized = omitSanitizedFields ?
+                null :
+                new List<string>(); ;
             this.Values = new List<int>();
 
             this.Metadata = bonusNode.Metadata;
