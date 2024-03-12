@@ -66,7 +66,9 @@ namespace YetAnotherPacketParser.Lexer
                                     paragraph.TextContent,
                                     previousFormatting.Italic,
                                     previousFormatting.Bolded,
-                                    previousFormatting.Underlined)
+                                    previousFormatting.Underlined,
+                                    previousFormatting.Subscripted,
+                                    previousFormatting.Superscripted)
                             }));
                     }
 
@@ -141,14 +143,20 @@ namespace YetAnotherPacketParser.Lexer
             if (!node.HasChildNodes && !string.IsNullOrEmpty(node.TextContent))
             {
                 segments.Add(new FormattedTextSegment(
-                    node.TextContent, formatting.Italic, formatting.Bolded, formatting.Underlined));
+                    node.TextContent,
+                    formatting.Italic,
+                    formatting.Bolded,
+                    formatting.Underlined,
+                    formatting.Subscripted,
+                    formatting.Superscripted));
                 return;
             }
 
             bool isElement = node.NodeType == NodeType.Element;
             IElement? element = node as Element;
 
-            // Need to change formatting if it's B/REQ, U, or I/EM. For other ones, just call GetString on the child.
+            // Need to change formatting if it's B/REQ, U, I/EM, SUB, or SUP. For other ones, just call GetString on
+            // the child.
             if (isElement && element != null)
             {
                 if (segments.Count > 0 && (element.TagName == "P" || element.TagName == "BR"))
@@ -197,6 +205,12 @@ namespace YetAnotherPacketParser.Lexer
                 case "U":
                     formatting.Underlined = value;
                     break;
+                case "SUB":
+                    formatting.Subscripted = value;
+                    break;
+                case "SUP":
+                    formatting.Superscripted = value;
+                    break;
                 default:
                     break;
             }
@@ -208,6 +222,10 @@ namespace YetAnotherPacketParser.Lexer
             public bool Italic { get; set; }
 
             public bool Underlined { get; set; }
+
+            public bool Superscripted { get; set; }
+
+            public bool Subscripted { get; set; }
         }
     }
 }

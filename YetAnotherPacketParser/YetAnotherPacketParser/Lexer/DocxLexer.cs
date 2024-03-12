@@ -143,6 +143,8 @@ namespace YetAnotherPacketParser.Lexer
             bool bolded = false;
             bool italic = false;
             bool underlined = false;
+            bool subscripted = false;
+            bool superscripted = false;
 
             List<ILine> lines = new List<ILine>();
             foreach (TextBlockLine textBlockLine in textBlockLines)
@@ -156,20 +158,31 @@ namespace YetAnotherPacketParser.Lexer
                     bool blockBolded = false;
                     bool blockItalic = false;
                     bool blockUnderlined = false;
+                    bool blockSubscripted = false;
+                    bool blockSuperscripted = false;
                     if (textBlock.Properties != null)
                     {
+                        string? verticalTextAlignmentVal = textBlock.Properties.VerticalTextAlignment?.Val?.ToString();
+
                         blockBolded = textBlock.Properties.Bold != null;
                         blockItalic = textBlock.Properties.Italic != null;
                         blockUnderlined = textBlock.Properties.Underline != null;
+                        blockSubscripted = verticalTextAlignmentVal == "subscript";
+                        blockSuperscripted = verticalTextAlignmentVal == "superscript";
                     }
 
-                    if (blockBolded != bolded || blockItalic != italic || blockUnderlined != underlined)
+                    if (blockBolded != bolded ||
+                        blockItalic != italic ||
+                        blockUnderlined != underlined ||
+                        blockSubscripted != subscripted ||
+                        blockSuperscripted != superscripted)
                     {
                         // Formatting has changed. This means the last segment finished. Add it if it has anything.
                         if (currentSegment.Length > 0)
                         {
                             formattedTextSegments.Add(
-                                new FormattedTextSegment(currentSegment.ToString(), italic, bolded, underlined));
+                                new FormattedTextSegment(
+                                    currentSegment.ToString(), italic, bolded, underlined, subscripted, superscripted));
                             currentSegment.Clear();
                         }
 
@@ -177,6 +190,8 @@ namespace YetAnotherPacketParser.Lexer
                         bolded = blockBolded;
                         italic = blockItalic;
                         underlined = blockUnderlined;
+                        subscripted = blockSubscripted;
+                        superscripted = blockSuperscripted;
                     }
 
                     currentSegment.Append(textBlock.Text);
@@ -195,7 +210,8 @@ namespace YetAnotherPacketParser.Lexer
                 // Add the remainder of the line
                 if (currentSegment.Length > 0)
                 {
-                    formattedTextSegments.Add(new FormattedTextSegment(currentSegment.ToString(), italic, bolded, underlined));
+                    formattedTextSegments.Add(new FormattedTextSegment(
+                        currentSegment.ToString(), italic, bolded, underlined, subscripted, superscripted));
                     currentSegment.Clear();
                 }
 

@@ -18,7 +18,7 @@ namespace YetAnotherPacketParserTests
             const string htmlPacket = @"<html>
     <body>
         <p>
-            1. This is a tossup. <u>Underline</u> and <i>italics</i>.
+            1. This is a tossup. <u>Underline</u> and <i>italics</i>. H<sub>2</sub>0 and x<sup>2</sup>.
             <br>
                 ANSWER: <b>Tossup</b> Answer
             </br>
@@ -76,6 +76,10 @@ namespace YetAnotherPacketParserTests
                 new FormattedTextSegment("Underline", underlined: true),
                 new FormattedTextSegment(" and "),
                 new FormattedTextSegment("italics", italic: true),
+                new FormattedTextSegment(". H"),
+                new FormattedTextSegment("2", isSubscript: true),
+                new FormattedTextSegment("0 and x"),
+                new FormattedTextSegment("2", isSuperscript: true),
                 new FormattedTextSegment(".\n            ")
             };
             CollectionAssert.AreEqual(

@@ -135,7 +135,9 @@ namespace YetAnotherPacketParser.Compiler
                     sanitizedText,
                     rawSegment.Italic,
                     rawSegment.Bolded,
-                    rawSegment.Underlined);
+                    rawSegment.Underlined,
+                    rawSegment.IsSubscript,
+                    rawSegment.IsSuperscript);
                 sanitizedFormattedTexts.Add(sanitizedFormattedText);
             }
 

@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using YetAnotherPacketParser.Ast;
@@ -63,7 +62,7 @@ namespace YetAnotherPacketParser.Compiler.Html
             builder.Append("<p>");
             builder.Append(bonus.Number);
             builder.Append(". ");
-            WriteFormattedText(bonus.Leadin, builder);
+            bonus.Leadin.WriteFormattedText(builder);
             builder.Append("<br>");
             foreach (BonusPartNode bonusPart in bonus.Parts)
             {
@@ -91,66 +90,11 @@ namespace YetAnotherPacketParser.Compiler.Html
 
         private static void WriteQuestion(QuestionNode node, StringBuilder builder)
         {
-            WriteFormattedText(node.Question, builder);
+            node.Question.WriteFormattedText(builder);
             builder.AppendLine("<br>");
             builder.Append("ANSWER: ");
-            WriteFormattedText(node.Answer, builder);
+            node.Answer.WriteFormattedText(builder);
             builder.AppendLine("<br>");
-        }
-
-        // TODO: move this somewhere where it can be tested, or merge with JsonCompiler (different tags needed)
-        // Would lose some efficiency that way, since we'd recreate a StringBuilder each time
-        private static void WriteFormattedText(FormattedText node, StringBuilder builder)
-        {
-            Verify.IsNotNull(node, nameof(node));
-
-            if (!node.Segments.Any())
-            {
-                return;
-            }
-
-            bool previousBolded = false;
-            bool previousItalic = false;
-            bool previousUnderlined = false;
-
-            foreach (FormattedTextSegment segment in node.Segments)
-            {
-                if (previousBolded ^ segment.Bolded)
-                {
-                    builder.Append(segment.Bolded ? "<b>" : "</b>");
-                    previousBolded = segment.Bolded;
-                }
-
-                if (previousUnderlined ^ segment.Underlined)
-                {
-                    builder.Append(segment.Underlined ? "<u>" : "</u>");
-                    previousUnderlined = segment.Underlined;
-                }
-
-                if (previousItalic ^ segment.Italic)
-                {
-                    builder.Append(segment.Italic ? "<em>" : "</em>");
-                    previousItalic = segment.Italic;
-                }
-
-                builder.Append(segment.Text);
-            }
-
-            // Close any remaining tags
-            if (previousBolded)
-            {
-                builder.Append("</b>");
-            }
-
-            if (previousUnderlined)
-            {
-                builder.Append("</u>");
-            }
-
-            if (previousItalic)
-            {
-                builder.Append("</em>");
-            }
         }
     }
 }
