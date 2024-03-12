@@ -9,9 +9,9 @@
     <Copyright>(c) 2020 Alejandro Lopez-Lago</Copyright>
     <Description>Yet Another Packet Parser parses quiz bowl packets and translates them to different formats</Description>
     <Product>YAPP</Product>
-    <AssemblyVersion>1.1.1.0</AssemblyVersion>
-    <FileVersion>1.1.1.0</FileVersion>
-    <Version>1.1.1.0</Version>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
+    <Version>1.2.0.0</Version>
 	<EnableNETAnalyzers>true</EnableNETAnalyzers>
 	<AnalysisMode>Recommended</AnalysisMode>
 	<AnalysisModeSecurity>All</AnalysisModeSecurity>

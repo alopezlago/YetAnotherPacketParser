@@ -29,7 +29,12 @@ namespace YetAnotherPacketParser
                 {
                     string substringText = segment.Text.Substring(startIndex - index);
                     segments.Add(new FormattedTextSegment(
-                        substringText, segment.Italic, segment.Bolded, segment.Underlined));
+                        substringText,
+                        segment.Italic,
+                        segment.Bolded,
+                        segment.Underlined,
+                        segment.IsSubscript,
+                        segment.IsSuperscript));
                 }
                 else if (index >= startIndex)
                 {

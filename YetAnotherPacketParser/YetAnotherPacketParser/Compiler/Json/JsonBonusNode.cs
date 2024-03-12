@@ -43,18 +43,18 @@ namespace YetAnotherPacketParser.Compiler.Json
 
         public string? Leadin_sanitized { get; }
 
-        public string? Metadata { get; }
+        public ICollection<string> Parts { get; }
+
+        public ICollection<string>? Parts_sanitized { get; }
 
         public ICollection<string> Answers { get; }
 
         public ICollection<string>? Answers_sanitized { get; }
 
-        public ICollection<string> Parts { get; }
-
-        public ICollection<string>? Parts_sanitized { get; }
-
         public ICollection<int> Values { get; }
 
         public ICollection<char?>? DifficultyModifiers { get; }
+
+        public string? Metadata { get; }
     }
 }
