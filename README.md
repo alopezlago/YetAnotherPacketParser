@@ -4,9 +4,11 @@
 
 Yet Another Packet Parser (YAPP) is a parser for quiz bowl packets written in C#. Some of its features are
 - Converts packets in a docx or HTML file to JSON or HTML
+- [MODAQ](https://github.com/alopezlago/MODAQ) can read the JSON packets it outputs
 - Can convert each packet in a zip file
 - Specific error messages that give a line number and text near where the parser failed
-- Configurable in how many lines to look ahead, which lets the parser successfully parse packets where some questions are split between multiple lines
+
+You can try out a simple demo of the parser [here](https://www.quizbowlreader.com/yapp.html).
 
 
 ## Usage
@@ -60,5 +62,5 @@ Note that the method can take in a zip file too, and it will return all of the p
 
 ### Requirements:
 - [.Net 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
-  - If using Visual Studio, you need Visual Studio 2017.5
+  - If using Visual Studio, you need at least Visual Studio 2017.5
   - Nuget packages should be automatically downloaded by running `dotnet build` or through `dotnet restore`
