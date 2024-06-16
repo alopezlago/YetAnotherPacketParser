@@ -6,8 +6,6 @@ namespace YetAnotherPacketParserTests
     [TestClass]
     public class LexerClassifierTests
     {
-        // TODO: Need test for [e]/[h]/[m] tags!
-
         [TestMethod]
         public void TextMatchesAnswer()
         {
@@ -164,6 +162,26 @@ namespace YetAnotherPacketParserTests
         public void NonBonusPartNotMatchesQuestionDigit()
         {
             VerifyDoesNotStartWithBonusPart("17.");
+        }
+
+        [TestMethod]
+        public void TextMatchesPostQuestionMetadata()
+        {
+            Assert.IsTrue(LexerClassifier.TextStartsWithPostQuestionMetadata("<Johnson, American Lit>"));
+        }
+
+        [TestMethod]
+        public void TextWithSpecialCharactersMatchesPostQuestionMetadata()
+        {
+            Assert.IsTrue(LexerClassifier.TextStartsWithPostQuestionMetadata("<Johnson, American Lit 1900+, 100%>"));
+            Assert.IsTrue(LexerClassifier.TextStartsWithPostQuestionMetadata("<Garcia-Garcia: American Lit ~2000>"));
+        }
+
+        [TestMethod]
+        public void TextDoesntMatchPostQuestionMetadata()
+        {
+            Assert.IsFalse(LexerClassifier.TextStartsWithPostQuestionMetadata("(Johnson, American Lit)"));
+            Assert.IsFalse(LexerClassifier.TextStartsWithPostQuestionMetadata("[Johnson, American Lit]"));
         }
 
         [TestMethod]

@@ -15,7 +15,7 @@ namespace YetAnotherPacketParser.Lexer
         private static readonly Regex BonusPartValueRegex = new Regex(
             "^\\s*\\[(\\s*(\\d)+\\s*[ehm]?\\s*|\\s*[ehm]\\s*)\\]\\s*", RegexOptions.Compiled);
         private static readonly Regex PostQuestionMetadataRegex = new Regex(
-            "^\\s*<(\\w|\\d|\\s|-|:|,)+(,(\\w|\\d|\\s|-|:|,)+)?>\\s*", RegexOptions.Compiled);
+            "^\\s*<[^<>]+>\\s*", RegexOptions.Compiled);
 
         public static bool TextStartsWithQuestionDigit(string text, out string matchValue, out int? number)
         {

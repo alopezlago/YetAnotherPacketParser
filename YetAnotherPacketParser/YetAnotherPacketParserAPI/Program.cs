@@ -6,7 +6,7 @@ using YetAnotherPacketParserAPI;
 
 // packets are about 80 KB, so 8 kb/s should finish it in 10 seconds
 MinDataRate minDataRate = new MinDataRate(8 * 1024, TimeSpan.FromSeconds(3));
-const int MaximumRequestInBytes = 2 * 1024 * 1024; // 2 MB
+const int MaximumRequestInBytes = 3 * 1024 * 1024; // 2 MB
 
 var builder = WebApplication.CreateBuilder(args);
 
