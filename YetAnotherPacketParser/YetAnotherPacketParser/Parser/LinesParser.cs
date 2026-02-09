@@ -64,6 +64,29 @@ namespace YetAnotherPacketParser.Parser
             }
         }
 
+        private static List<string> AddErrors(
+            List<string> errorMessages, IEnumerable<string> newErrorMessages, out bool errorsRemaining)
+        {
+            // Add error messages from the failed result without enumerating the enumerable multiple times
+            // through LINQ
+            int errorLimit = MaximumFailureMessagesPerSection - errorMessages.Count;
+            foreach (string errorMessage in newErrorMessages)
+            {
+                // If we're trying to add more and we've reached the limit, then we're trying to add too many
+                if (errorLimit <= 0)
+                {
+                    errorsRemaining = true;
+                    return errorMessages;
+                }
+
+                errorMessages.Add(errorMessage);
+                errorLimit--;
+            }
+
+            errorsRemaining = false;
+            return errorMessages;
+        }
+
         private static IResult<FormattedText> GetTextFromLines(
             LinesEnumerator lines, string context, LineType nextExpectedLineType)
         {
@@ -269,8 +292,9 @@ namespace YetAnotherPacketParser.Parser
                         errorMessages = new List<string>();
                     }
 
-                    errorMessages.AddRange(tossupResult.ErrorMessages);
-                    if (errorMessages.Count == MaximumFailureMessagesPerSection)
+                    errorMessages = AddErrors(errorMessages, tossupResult.ErrorMessages, out bool errorsRemaining);
+
+                    if (errorsRemaining)
                     {
                         break;
                     }
@@ -311,8 +335,9 @@ namespace YetAnotherPacketParser.Parser
                         errorMessages = new List<string>();
                     }
 
-                    errorMessages.AddRange(bonusResult.ErrorMessages);
-                    if (errorMessages.Count >= MaximumFailureMessagesPerSection)
+                    errorMessages = AddErrors(errorMessages, bonusResult.ErrorMessages, out bool errorsRemaining);
+
+                    if (errorsRemaining)
                     {
                         break;
                     }

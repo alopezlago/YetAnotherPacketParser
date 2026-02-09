@@ -32,8 +32,9 @@ namespace YetAnotherPacketParser.Lexer
                 return false;
             }
 
+            // Use the captured group to get the numeric part without needing to replace/remove the braces and make
+            // new strings.
             matchValue = match.Value;
-            // Use the captured group for the numeric part (group 1) to avoid allocating via Replace
             string numericPart = match.Groups[1].Value;
             if (int.TryParse(numericPart, out int parsedNumber))
             {
