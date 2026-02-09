@@ -8,15 +8,15 @@ namespace YetAnotherPacketParser
 {
     internal static class MagicWordDetector
     {
-        private static readonly byte[] zipMagicWords = new byte[] { 0x50, 0x4b, 0x03, 0x04 };
-        private static readonly byte[] zipEmptyMagicWords = new byte[] { 0x50, 0x4b, 0x05, 0x06 };
-        private static readonly byte[] zipSpannedMagicWords = new byte[] { 0x50, 0x4b, 0x07, 0x08 };
-        private static readonly byte[][] allZipMagicWords = new byte[][]
-        {
+        private static readonly byte[] zipMagicWords = [0x50, 0x4b, 0x03, 0x04];
+        private static readonly byte[] zipEmptyMagicWords = [0x50, 0x4b, 0x05, 0x06];
+        private static readonly byte[] zipSpannedMagicWords = [0x50, 0x4b, 0x07, 0x08];
+        private static readonly byte[][] allZipMagicWords =
+        [
             zipMagicWords,
             zipEmptyMagicWords,
             zipSpannedMagicWords
-        };
+        ];
 
         // Returns a succesful result if it is a zip file. It returns a read-only stream
         public static async Task<Tuple<bool, Stream>> IsZipFile(Stream stream)

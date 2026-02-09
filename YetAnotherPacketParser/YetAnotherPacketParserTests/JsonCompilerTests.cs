@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using YetAnotherPacketParser;
 using YetAnotherPacketParser.Ast;
@@ -20,24 +21,21 @@ namespace YetAnotherPacketParserTests
             const string bonusMetadata = "BonusMetadata";
 
             PacketNode packetNode = new PacketNode(
-                new TossupNode[]
-                {
+                [
                     new TossupNode(
                         1,
                         new QuestionNode(CreateFormattedText(tossupQuestionText), CreateFormattedText(tossupAnswerText)),
                         "<Alice - History>")
-                },
-                new BonusNode[]
-                {
+                ],
+                [
                     new BonusNode(
                         1,
                         CreateFormattedText(leadinText),
-                        new BonusPartNode[]
-                        {
+                        [
                             new BonusPartNode(new QuestionNode(CreateFormattedText(bonusQuestion), CreateFormattedText(bonusAnswer)), 10, 'e')
-                        },
+                        ],
                         bonusMetadata)
-                });
+                ]);
 
             JsonCompilerOptions options = new JsonCompilerOptions()
             {
@@ -73,24 +71,21 @@ namespace YetAnotherPacketParserTests
             const string bonusMetadata = "BonusMetadata";
 
             PacketNode packetNode = new PacketNode(
-                new TossupNode[]
-                {
+                [
                     new TossupNode(
                         1,
                         new QuestionNode(CreateFormattedText(tossupQuestionText), CreateFormattedText(tossupAnswerText)),
                         "<Alice - History>")
-                },
-                new BonusNode[]
-                {
+                ],
+                [
                     new BonusNode(
                         1,
                         CreateFormattedText(leadinText),
-                        new BonusPartNode[]
-                        {
+                        [
                             new BonusPartNode(new QuestionNode(CreateFormattedText(bonusQuestion), CreateFormattedText(bonusAnswer)), 10, 'e')
-                        },
+                        ],
                         bonusMetadata)
-                });
+                ]);
 
             JsonCompilerOptions options = new JsonCompilerOptions()
             {
@@ -117,7 +112,42 @@ namespace YetAnotherPacketParserTests
 
         private static FormattedText CreateFormattedText(string text)
         {
-            return new FormattedText(new FormattedTextSegment[] { new FormattedTextSegment(text) });
+            return new FormattedText([new FormattedTextSegment(text)]);
+        }
+
+        [TestMethod]
+        public async Task Compile_NullPacket_ThrowsArgumentNullException()
+        {
+            JsonCompiler compiler = new JsonCompiler();
+
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
+                await compiler.CompileAsync(null!));
+        }
+
+        [TestMethod]
+        public async Task Compile_PrettyPrint_TogglesFormatting()
+        {
+            PacketNode packetNode = new PacketNode(
+                [new TossupNode(1, new QuestionNode(CreateFormattedText("Q"), CreateFormattedText("A")))],
+                null);
+
+            JsonCompilerOptions prettyOptions = new JsonCompilerOptions()
+            {
+                PrettyPrint = true
+            };
+            JsonCompiler prettyCompiler = new JsonCompiler(prettyOptions);
+            string prettyResult = await prettyCompiler.CompileAsync(packetNode);
+
+            Assert.IsTrue(prettyResult.Contains('\n'), "Pretty-printed result should contain newlines");
+
+            JsonCompilerOptions compactOptions = new JsonCompilerOptions()
+            {
+                PrettyPrint = false
+            };
+            JsonCompiler compactCompiler = new JsonCompiler(compactOptions);
+            string compactResult = await compactCompiler.CompileAsync(packetNode);
+
+            Assert.IsFalse(compactResult.Contains('\n'), "Non-pretty-printed result should not contain newlines");
         }
     }
 }

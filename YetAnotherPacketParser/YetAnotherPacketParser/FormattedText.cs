@@ -16,32 +16,36 @@ namespace YetAnotherPacketParser
 
         public FormattedText Substring(int startIndex)
         {
-            List<FormattedTextSegment> segments = new List<FormattedTextSegment>();
+            // If index == 0, this is the start of the string. Exit early.
+            if (startIndex == 0)
+            {
+                return this;
+            }
 
             int index = 0;
-            foreach (FormattedTextSegment segment in this.Segments)
+            List<FormattedTextSegment> segments = new List<FormattedTextSegment>();
+            IEnumerator<FormattedTextSegment> segmentsEnumerator = this.Segments.GetEnumerator();
+
+            // We don't add any segments until we reach startIndex. There's a good chance that startIndex is in the
+            // middle of a segment, so look for the first segment where 
+            while (segmentsEnumerator.MoveNext())
             {
-                // TODO: Consider using an enumerator and converting this to a while loop. When we find the first
-                // instance where we cross the startIndex, break the loop and just add the rest of the segments
-                // directly.
+                FormattedTextSegment segment = segmentsEnumerator.Current;
                 int nextIndex = index + segment.Text.Length;
-                if (index < startIndex && nextIndex > startIndex)
+                if (index <= startIndex && nextIndex > startIndex)
                 {
                     string substringText = segment.Text.Substring(startIndex - index);
-                    segments.Add(new FormattedTextSegment(
-                        substringText,
-                        segment.Italic,
-                        segment.Bolded,
-                        segment.Underlined,
-                        segment.IsSubscript,
-                        segment.IsSuperscript));
-                }
-                else if (index >= startIndex)
-                {
-                    segments.Add(segment);
+                    segments.Add(new FormattedTextSegment(substringText, segment));
+                    break;
                 }
 
                 index = nextIndex;
+            }
+
+            // We're past the crossing point, so every segment from here on can be added directly
+            while (segmentsEnumerator.MoveNext())
+            {
+                segments.Add(segmentsEnumerator.Current);
             }
 
             return new FormattedText(segments);

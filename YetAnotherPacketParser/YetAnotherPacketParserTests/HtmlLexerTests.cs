@@ -54,8 +54,8 @@ namespace YetAnotherPacketParserTests
             Assert.IsNotNull(lines);
 
             ILine[] classifiedLines = lines.Where(line => line.Type != LineType.Unclassified).ToArray();
-            LineType[] expectedTypes = new LineType[]
-            {
+            LineType[] expectedTypes =
+            [
                 LineType.NumberedQuestion,
                 LineType.Answer,
                 LineType.NumberedQuestion,
@@ -63,15 +63,15 @@ namespace YetAnotherPacketParserTests
                 LineType.Answer,
                 LineType.BonusPart,
                 LineType.Answer
-            };
+            ];
             CollectionAssert.AreEqual(
                 expectedTypes,
                 classifiedLines.Select(line => line.Type).ToArray(),
                 "Unexpected types for a Line");
 
             // TODO Need to verify formatted segments and texts
-            FormattedTextSegment[] expectedSegments = new FormattedTextSegment[]
-            {
+            FormattedTextSegment[] expectedSegments =
+            [
                 new FormattedTextSegment("This is a tossup. "),
                 new FormattedTextSegment("Underline", underlined: true),
                 new FormattedTextSegment(" and "),
@@ -81,17 +81,17 @@ namespace YetAnotherPacketParserTests
                 new FormattedTextSegment("0 and x"),
                 new FormattedTextSegment("2", isSuperscript: true),
                 new FormattedTextSegment(".\n            ")
-            };
+            ];
             CollectionAssert.AreEqual(
                 expectedSegments,
                 classifiedLines[0].Text.Segments.ToArray(),
                 "First line segments don't match");
 
-            expectedSegments = new FormattedTextSegment[]
-            {
+            expectedSegments =
+            [
                 new FormattedTextSegment("Tossup", bolded: true),
                 new FormattedTextSegment(" Answer\n            "),
-            };
+            ];
             CollectionAssert.AreEqual(
                 expectedSegments,
                 classifiedLines[1].Text.Segments.ToArray(),
@@ -162,8 +162,8 @@ namespace YetAnotherPacketParserTests
             Assert.IsNotNull(lines);
 
             ILine[] classifiedLines = lines.Where(line => line.Type != LineType.Unclassified).ToArray();
-            LineType[] expectedTypes = new LineType[]
-            {
+            LineType[] expectedTypes =
+            [
                 LineType.NumberedQuestion,
                 LineType.Answer,
                 LineType.NumberedQuestion,
@@ -171,15 +171,15 @@ namespace YetAnotherPacketParserTests
                 LineType.Answer,
                 LineType.BonusPart,
                 LineType.Answer
-            };
+            ];
             CollectionAssert.AreEqual(
                 expectedTypes,
                 classifiedLines.Select(line => line.Type).ToArray(),
                 "Unexpected types for a Line");
 
             // TODO Need to verify formatted segments and texts
-            FormattedTextSegment[] expectedSegments = new FormattedTextSegment[]
-            {
+            FormattedTextSegment[] expectedSegments =
+            [
                 new FormattedTextSegment("This is a tossup. "),
                 new FormattedTextSegment("Underline", underlined: true),
                 new FormattedTextSegment(" and "),
@@ -189,17 +189,17 @@ namespace YetAnotherPacketParserTests
                 new FormattedTextSegment("0 and x"),
                 new FormattedTextSegment("2", isSuperscript: true),
                 new FormattedTextSegment(".\n            ")
-            };
+            ];
             CollectionAssert.AreEqual(
                 expectedSegments,
                 classifiedLines[0].Text.Segments.ToArray(),
                 "First line segments don't match");
 
-            expectedSegments = new FormattedTextSegment[]
-            {
+            expectedSegments =
+            [
                 new FormattedTextSegment("Tossup", bolded: true),
                 new FormattedTextSegment(" Answer\n            "),
-            };
+            ];
             CollectionAssert.AreEqual(
                 expectedSegments,
                 classifiedLines[1].Text.Segments.ToArray(),

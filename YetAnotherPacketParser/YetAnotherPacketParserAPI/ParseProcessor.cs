@@ -53,7 +53,7 @@ namespace YetAnotherPacketParserAPI
                     return Results.Text(compileResult.Result.Value, contentType: "text/html");
                 }
 
-                if (TryGetStringValueFromQuery(request, "mergeMultiple", out string mergeMultipleValue) &&
+                if (TryGetStringValueFromQuery(request, "mergeMultiple", out string? mergeMultipleValue) &&
                     bool.TryParse(mergeMultipleValue, out bool mergeMultiple))
                 {
                     log.LogInformation($"Merge multiple packets: {mergeMultiple}");
@@ -64,7 +64,7 @@ namespace YetAnotherPacketParserAPI
                     mergeMultiple = false;
                 }
 
-                if (TryGetStringValueFromQuery(request, "version", out string versionValue) &&
+                if (TryGetStringValueFromQuery(request, "version", out string? versionValue) &&
                     int.TryParse(versionValue, out int version))
                 {
                     log.LogInformation($"Passed in version: {version}");
@@ -118,9 +118,29 @@ namespace YetAnotherPacketParserAPI
                     // If the output is a zip-file, base64 encode the response since it may have null or unprintable
                     // characters that make it difficult for clients to consume
                     // We don't need to do this for JSON or HTML, which are regular strings
-                    string result = !mergeMultiple ?
-                        Convert.ToBase64String(memoryStream.ToArray()) :
-                        Encoding.UTF8.GetString(memoryStream.ToArray());
+                    string result;
+                    if (!mergeMultiple)
+                    {
+                        if (memoryStream.TryGetBuffer(out ArraySegment<byte> buffer) && buffer.Array != null)
+                        {
+                            result = Convert.ToBase64String(buffer.Array, buffer.Offset, buffer.Count);
+                        }
+                        else
+                        {
+                            result = Convert.ToBase64String(memoryStream.ToArray());
+                        }
+                    }
+                    else
+                    {
+                        if (memoryStream.TryGetBuffer(out ArraySegment<byte> buffer) && buffer.Array != null)
+                        {
+                            result = Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
+                        }
+                        else
+                        {
+                            result = Encoding.UTF8.GetString(memoryStream.ToArray());
+                        }
+                    }
                     ZipResponse response = new ZipResponse(contentType, result, errors, successResults.Count());
                     await memoryStream.DisposeAsync();
                     return Results.Json(response);
@@ -132,7 +152,7 @@ namespace YetAnotherPacketParserAPI
 
         private static IResult GetBadRequest(string errorMessage)
         {
-            return Results.BadRequest(new ErrorMessageResponse(new string[] { errorMessage }));
+            return Results.BadRequest(new ErrorMessageResponse([errorMessage]));
         }
 
         private static IResult GetBadRequest(IEnumerable<string> errorMessages)
@@ -143,7 +163,7 @@ namespace YetAnotherPacketParserAPI
         private static IPacketConverterOptions GetOptions(HttpRequest request, ILogger log)
         {
             OutputFormat outputFormat;
-            if (TryGetStringValueFromQuery(request, "format", out string outputFormatString))
+            if (TryGetStringValueFromQuery(request, "format", out string? outputFormatString))
             {
                 log.LogInformation($"Parsed format: {outputFormatString}");
                 switch (outputFormatString.ToUpperInvariant())
@@ -166,7 +186,7 @@ namespace YetAnotherPacketParserAPI
                 log.LogInformation("Using the default format");
             }
 
-            if (TryGetStringValueFromQuery(request, "prettyPrint", out string stringValue) &&
+            if (TryGetStringValueFromQuery(request, "prettyPrint", out string? stringValue) &&
                 bool.TryParse(stringValue, out bool prettyPrint))
             {
                 log.LogInformation($"Parsed prettyPrint: {prettyPrint}");
@@ -177,7 +197,7 @@ namespace YetAnotherPacketParserAPI
                 log.LogInformation("Using the default pretty print setting");
             }
 
-            if (TryGetStringValueFromQuery(request, "modaq", out string modaqValue) &&
+            if (TryGetStringValueFromQuery(request, "modaq", out string? modaqValue) &&
                 bool.TryParse(modaqValue, out bool modaqFormat))
             {
                 log.LogInformation($"Parsed MODAQ formatted: {modaqFormat}");
@@ -244,7 +264,7 @@ namespace YetAnotherPacketParserAPI
         {
             if (request.Query.TryGetValue(key, out StringValues values) && values.Count > 0)
             {
-                stringValue = values[0];
+                stringValue = values[0] ?? string.Empty;
                 return true;
             }
 
@@ -277,30 +297,42 @@ namespace YetAnotherPacketParserAPI
 
         private static void WriteMultiplePacketsToHtml(IEnumerable<ConvertResult> packets, Stream stream)
         {
-            IList<string> htmlBodies = new List<string>();
-            foreach (ConvertResult compileResult in packets.OrderBy(packet => packet.Filename))
-            {
-                string html = compileResult.Result.Value;
-                int bodyStartIndex = html.IndexOf("<body>", StringComparison.OrdinalIgnoreCase);
-                int bodyEndIndex = html.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
-                if (bodyStartIndex == -1 || bodyEndIndex == -1 || bodyStartIndex > bodyEndIndex)
-                {
-                    // Skip, since the HTML was malformed
-                    continue;
-                }
-
-                // Skip past "<body>"
-                bodyStartIndex += 6;
-                string htmlBody = $"<h2>{compileResult.Filename.Replace(".docx", string.Empty)}</h2>{html.Substring(bodyStartIndex, bodyEndIndex - bodyStartIndex)}";
-
-                htmlBodies.Add(htmlBody);
-            }
-
-            string bundledHtml = $"<html><body>{string.Join("<br>", htmlBodies)}</body></html>";
-
             using (StreamWriter writer = new StreamWriter(stream, leaveOpen: true))
             {
-                writer.Write(bundledHtml);
+                writer.Write("<html><body>");
+
+                bool firstItem = true;
+                foreach (ConvertResult compileResult in packets.OrderBy(packet => packet.Filename))
+                {
+                    string html = compileResult.Result.Value;
+                    int bodyStartIndex = html.IndexOf("<body>", StringComparison.OrdinalIgnoreCase);
+                    int bodyEndIndex = html.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+                    if (bodyStartIndex == -1 || bodyEndIndex == -1 || bodyStartIndex > bodyEndIndex)
+                    {
+                        // Skip, since the HTML was malformed
+                        continue;
+                    }
+
+                    // Skip past "<body>"
+                    bodyStartIndex += 6;
+                    ReadOnlySpan<char> bodySpan = html.AsSpan(bodyStartIndex, bodyEndIndex - bodyStartIndex);
+
+                    if (!firstItem)
+                    {
+                        writer.Write("<br>");
+                    }
+
+                    string title = compileResult.Filename.Replace(".docx", string.Empty);
+                    writer.Write("<h2>");
+                    writer.Write(title);
+                    writer.Write("</h2>");
+
+                    writer.Write(bodySpan);
+
+                    firstItem = false;
+                }
+
+                writer.Write("</body></html>");
             }
         }
 

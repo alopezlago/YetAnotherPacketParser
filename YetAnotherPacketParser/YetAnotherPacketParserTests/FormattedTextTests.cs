@@ -11,8 +11,8 @@ namespace YetAnotherPacketParserTests
         [TestMethod]
         public void TestFormat()
         {
-            FormattedTextSegment[] segments = new FormattedTextSegment[]
-            {
+            FormattedTextSegment[] segments =
+            [
                 new FormattedTextSegment("First"),
                 new FormattedTextSegment("Second", italic: true),
                 new FormattedTextSegment("Third", italic: true, bolded: true),
@@ -23,7 +23,7 @@ namespace YetAnotherPacketParserTests
                 new FormattedTextSegment("Eighth", italic: true, bolded: true),
                 new FormattedTextSegment("Ninth", italic: true),
                 new FormattedTextSegment("Tenth"),
-            };
+            ];
 
             FormattedText text = new FormattedText(segments);
             StringBuilder builder = new StringBuilder();

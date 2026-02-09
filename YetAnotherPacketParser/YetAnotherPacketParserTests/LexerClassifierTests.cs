@@ -105,6 +105,18 @@ namespace YetAnotherPacketParserTests
         }
 
         [TestMethod]
+        public void TextMatchesBonusPartEasyDifficultyModifierUpperCase()
+        {
+            VerifyStartsWithBonusPart("[10E]", 10, 'e');
+        }
+
+        [TestMethod]
+        public void TextMatchesBonusPartSpacesBetweenValueAndDifficulty()
+        {
+            VerifyStartsWithBonusPart("[ 20 e ]", 20, 'e');
+        }
+
+        [TestMethod]
         public void TextMatchesBonusPartOnlyEasyDifficultyModifier()
         {
             VerifyStartsWithBonusPart("[e]", 10, 'e');
@@ -120,6 +132,25 @@ namespace YetAnotherPacketParserTests
         public void TextMatchesBonusPartOnlyHardDifficultyModifier()
         {
             VerifyStartsWithBonusPart("[h]", 10, 'h');
+        }
+
+        [TestMethod]
+        public void TextMatchesBonusPart_NoSpaceAfterBracket()
+        {
+            // when no space follows the closing bracket, matchValue should be the bracketed part only
+            string line = "[10]My bonus part";
+            Assert.IsTrue(LexerClassifier.TextStartsWithBonsuPart(
+                line, out string matchValue, out int? partValue, out char? difficultyModifier),
+                "Text should match bonus part");
+            Assert.AreEqual("[10]", matchValue);
+            Assert.AreEqual(10, partValue);
+            Assert.IsNull(difficultyModifier);
+        }
+
+        [TestMethod]
+        public void NonBonusPartEmptyNotBonusPart()
+        {
+            VerifyDoesNotStartWithBonusPart("[]");
         }
 
         [TestMethod]
@@ -162,6 +193,12 @@ namespace YetAnotherPacketParserTests
         public void NonBonusPartNotMatchesQuestionDigit()
         {
             VerifyDoesNotStartWithBonusPart("17.");
+        }
+
+        [TestMethod]
+        public void NonBonusPartNotMatchesValueTooLarge()
+        {
+            VerifyDoesNotStartWithBonusPart("[9876543210h]");
         }
 
         [TestMethod]
@@ -236,6 +273,22 @@ namespace YetAnotherPacketParserTests
                 "Question number didn't match");
             Assert.AreEqual($"1.", matchValue, "Match value didn't match the question number");
             Assert.AreEqual(1, number, "Number is incorrect");
+        }
+
+        [TestMethod]
+        public void TextMatchesQuestionDigit_LeadingZero()
+        {
+            VerifyStartsWithQuestionDigit("01.", 1);
+        }
+
+        [TestMethod]
+        public void TextMatchesQuestionDigit_TooLargeNumber()
+        {
+            // match should succeed but int.TryParse fails. Treat it like a tiebreaker
+            string big = "9876543210.";
+            Assert.IsTrue(LexerClassifier.TextStartsWithQuestionDigit($"{big} The question", out string matchValue, out int? number));
+            Assert.AreEqual(big + " ", matchValue);
+            Assert.IsNull(number);
         }
 
         [TestMethod]

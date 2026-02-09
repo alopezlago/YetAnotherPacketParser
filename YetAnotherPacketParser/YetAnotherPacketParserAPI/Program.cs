@@ -42,11 +42,13 @@ builder.Services.AddHttpLogging(options =>
     options.LoggingFields = HttpLoggingFields.RequestPropertiesAndHeaders | HttpLoggingFields.ResponsePropertiesAndHeaders | HttpLoggingFields.ResponseStatusCode;
 });
 
+#pragma warning disable CA1416 // Validate platform compatibility
 builder.Logging.AddEventLog(new Microsoft.Extensions.Logging.EventLog.EventLogSettings()
 {
     LogName = "YAPP",
     SourceName = "YAPP"
 });
+#pragma warning restore CA1416 // Validate platform compatibility
 builder.Logging.AddEventSourceLogger();
 
 

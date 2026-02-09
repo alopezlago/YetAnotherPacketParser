@@ -23,17 +23,42 @@ namespace YetAnotherPacketParserTests
         }
 
         [TestMethod]
+        public void FailureMessagesAreCapped()
+        {
+            var lines = new List<ILine>();
+            for (int i = 1; i <= 30; i++)
+            {
+                lines.Add(CreateQuestionLine(i, $"Question without answer #{i}"));
+            }
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+
+            // There should be a set of failure messages for tossup parsing, and one for bonus parsing
+            int expectedAnswerErrorMessageCount = packetResult.ErrorMessages
+                .Count(message => message.StartsWith("Unexpected line found. Was expecting a line of type \"Answer\""));
+            Assert.AreEqual(
+                LinesParser.MaximumFailureMessagesPerSection, expectedAnswerErrorMessageCount, "Unexpected number of tossup error messages");
+
+            int expectedBonusPartErrorMessageCount = packetResult.ErrorMessages
+                .Count(message => message.StartsWith("Unexpected line found. Was expecting a line of type \"BonusPart\""));
+            Assert.AreEqual(
+                LinesParser.MaximumFailureMessagesPerSection, expectedBonusPartErrorMessageCount, "Unexpected number of bonuss error messages");
+        }
+
+        [TestMethod]
         public void OneTossupPacketParses()
         {
             const int number = 1;
             const string questionText = "This is my tossup";
             const string answer = "An answer";
 
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(number, questionText),
                 CreateAnswerLine(answer)
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -58,12 +83,12 @@ namespace YetAnotherPacketParserTests
             const string answer = "An answer";
             const string metadata = "Some metadata";
 
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(number, questionText),
                 CreateAnswerLine(answer),
                 CreatePostQuestionMetadaLine(metadata)
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -88,8 +113,8 @@ namespace YetAnotherPacketParserTests
             const string tossupQuestionText = "This is my tossup";
             const string tossupAnswer = "An answer";
             const string bonusLeadin = "This is my leadin";
-            string[] bonusParts = new string[] { "Part #1", "Part #2" };
-            string[] bonusAnswers = new string[] { "Answer #1", "Answer #2" };
+            string[] bonusParts = ["Part #1", "Part #2"];
+            string[] bonusAnswers = ["Answer #1", "Answer #2"];
 
             List<ILine> lines = new List<ILine>()
             {
@@ -139,17 +164,17 @@ namespace YetAnotherPacketParserTests
         [TestMethod]
         public void TwoTossupsPacketParses()
         {
-            string[] questions = new string[] { "This is my tossup", "Another tossup" };
-            string[] answers = new string[] { "An answer", "Answer #2" };
+            string[] questions = ["This is my tossup", "Another tossup"];
+            string[] answers = ["An answer", "Answer #2"];
 
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, questions[0]),
                 CreateAnswerLine(answers[0]),
                 new Line(CreateFormattedText(string.Empty)),
                 CreateQuestionLine(2, questions[1]),
                 CreateAnswerLine(answers[1])
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -173,12 +198,12 @@ namespace YetAnotherPacketParserTests
         [TestMethod]
         public void TwoTossupsWithMetdataPacketParses()
         {
-            string[] questions = new string[] { "This is my tossup", "Another tossup" };
-            string[] answers = new string[] { "An answer", "Answer #2" };
-            string[] metadata = new string[] { "<Alice, Science>", "<Bob, Literature>" };
+            string[] questions = ["This is my tossup", "Another tossup"];
+            string[] answers = ["An answer", "Answer #2"];
+            string[] metadata = ["<Alice, Science>", "<Bob, Literature>"];
 
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, questions[0]),
                 CreateAnswerLine(answers[0]),
                 CreatePostQuestionMetadaLine(metadata[0]),
@@ -187,7 +212,7 @@ namespace YetAnotherPacketParserTests
                 CreateAnswerLine(answers[1]),
                 new Line(CreateFormattedText(string.Empty)),
                 CreatePostQuestionMetadaLine(metadata[1])
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -215,13 +240,16 @@ namespace YetAnotherPacketParserTests
             const string questionText = "This is my tossup";
             const string remainingQuestionText = " that was split";
             const string answer = "An answer";
+            const string metadata = "<John, American History>";
 
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(number, questionText),
                 new Line(CreateFormattedText(remainingQuestionText)),
-                CreateAnswerLine(answer)
-            };
+                CreateAnswerLine(answer),
+                new Line(CreateFormattedText(string.Empty)),
+                CreatePostQuestionMetadaLine(metadata)
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -238,6 +266,7 @@ namespace YetAnotherPacketParserTests
                 tossup.Question.Question.UnformattedText,
                 "Unexpected question");
             Assert.AreEqual(answer, tossup.Question.Answer.UnformattedText, "Unexpected answer");
+            Assert.AreEqual(metadata, tossup.Metadata, "Unexpected metadata");
         }
 
         [TestMethod]
@@ -248,8 +277,8 @@ namespace YetAnotherPacketParserTests
             const string remainingQuestionText = " split";
             const string answer = "An answer";
 
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateAnswerLine("Answer"),
                 CreateQuestionLine(1, "Bonus leadin"),
@@ -258,7 +287,7 @@ namespace YetAnotherPacketParserTests
                 CreateAnswerLine(answer),
                 CreatePartLine("Second part question", 10),
                 CreateAnswerLine("Second answer")
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -283,15 +312,15 @@ namespace YetAnotherPacketParserTests
         [TestMethod]
         public void BonusPartWithNoAnswerFails()
         {
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateAnswerLine("Answer"),
                 CreateQuestionLine(1, "Bonus leadin"),
                 CreatePartLine("Bonus part that is", 10),
                 CreateAnswerLine("Answer again"),
                 CreatePartLine("Second part question with no answer", 10)
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -302,15 +331,15 @@ namespace YetAnotherPacketParserTests
         [TestMethod]
         public void BonusPartFollowedByAnotherPartWithNoAnswerFails()
         {
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateAnswerLine("Answer"),
                 CreateQuestionLine(1, "Bonus leadin"),
                 CreatePartLine("Bonus part that is", 10),
                 CreatePartLine("Skipped the last answer", 10),
                 CreateAnswerLine("The answer")
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -326,15 +355,15 @@ namespace YetAnotherPacketParserTests
         [TestMethod]
         public void BonusLeadinNotFollowedByBonusPartFails()
         {
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateAnswerLine("Answer"),
                 CreateQuestionLine(1, "Bonus leadin"),
                 CreateAnswerLine("The answer"),
                 CreatePartLine("Bonus part", 10),
                 CreateAnswerLine("The next answer")
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -350,15 +379,15 @@ namespace YetAnotherPacketParserTests
         [TestMethod]
         public void BonusWithNoBonusPartsFails()
         {
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateAnswerLine("Answer"),
                 CreateQuestionLine(1, "Bonus leadin"),
                 CreateQuestionLine(2, "Another leadin and question"),
                 CreatePartLine("Bonus part that is", 10),
                 CreateAnswerLine("Answer again"),
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -370,15 +399,15 @@ namespace YetAnotherPacketParserTests
         public void BonusWithMeatdataSucceeds()
         {
             const string metadata = "My metadata";
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateAnswerLine("Answer"),
                 CreateQuestionLine(1, "Bonus leadin"),
                 CreatePartLine("Bonus part that is", 10),
                 CreateAnswerLine("The answer"),
                 CreatePostQuestionMetadaLine(metadata)
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -395,14 +424,14 @@ namespace YetAnotherPacketParserTests
         public void BonusPartWithDifficultyModifierSucceeds()
         {
             const char modifier = 'h';
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateAnswerLine("Answer"),
                 CreateQuestionLine(1, "Bonus leadin"),
                 CreatePartLine("Bonus part that is", 10, modifier),
                 CreateAnswerLine("The answer")
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -418,14 +447,31 @@ namespace YetAnotherPacketParserTests
         }
 
         [TestMethod]
+        public void LeadingUnclassifiedLinesAreIgnored()
+        {
+            ILine[] lines =
+            [
+                new Line(CreateFormattedText("Irrelevant intro")),
+                new Line(CreateFormattedText("More intro")),
+                CreateQuestionLine(1, "Question text"),
+                CreateAnswerLine("Answer text")
+            ];
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsTrue(packetResult.Success);
+            Assert.AreEqual(1, packetResult.Value.Tossups.Count());
+        }
+
+        [TestMethod]
         public void TossupWithNoAnswerFails()
         {
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateQuestionLine(2, "Second tossup!"),
                 CreateAnswerLine("Answer")
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -434,17 +480,42 @@ namespace YetAnotherPacketParserTests
         }
 
         [TestMethod]
+        public void TossupWithNoAnswerFails_ErrorMessageTruncated()
+        {
+            string longText = new string('X', 200);
+            ILine[] lines =
+            [
+                CreateQuestionLine(1, "First question"),
+                CreateQuestionLine(2, longText),
+                CreateAnswerLine("A2")
+            ];
+
+            LinesParser parser = new LinesParser();
+            IResult<PacketNode> packetResult = parser.Parse(lines);
+            Assert.IsFalse(packetResult.Success);
+
+            string errorMessage = packetResult.ErrorMessages.First();
+
+            Assert.IsTrue(
+                errorMessage.Contains(new string('X', LinesParser.FailureSnippetCharacterLimit)),
+                $"Couldn't find failure snippet in '{errorMessage}'");
+            Assert.IsFalse(
+                errorMessage.Contains(new string('X', LinesParser.FailureSnippetCharacterLimit + 1)),
+                $"Found a failure snippet that was too long in '{errorMessage}'");
+        }
+
+        [TestMethod]
         public void MultipleTossupFailuresReturned()
         {
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateQuestionLine(2, "Second tossup!"),
                 CreateAnswerLine("Answer"),
                 CreateQuestionLine(3, "Third tossup"),
                 CreateQuestionLine(4, "Fourth tossup"),
                 CreateAnswerLine("Fourth Answer"),
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -465,8 +536,8 @@ namespace YetAnotherPacketParserTests
         [TestMethod]
         public void MultipleBonusFailuresReturned()
         {
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateAnswerLine("Answer"),
                 CreateQuestionLine(1, "Bonus leadin"),
@@ -477,7 +548,7 @@ namespace YetAnotherPacketParserTests
                 CreateQuestionLine(4, "Fourth leadin and question"),
                 CreatePartLine("Some part", 10),
                 CreateAnswerLine("Answer again"),
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -498,8 +569,8 @@ namespace YetAnotherPacketParserTests
         [TestMethod]
         public void TossupAndBonusFailuresReturned()
         {
-            ILine[] lines = new ILine[]
-            {
+            ILine[] lines =
+            [
                 CreateQuestionLine(1, "Tossup"),
                 CreateQuestionLine(2, "Second Tossup"),
                 CreateAnswerLine("Answer"),
@@ -507,7 +578,7 @@ namespace YetAnotherPacketParserTests
                 CreateQuestionLine(2, "Another leadin and question"),
                 CreatePartLine("Bonus part", 10),
                 CreateAnswerLine("Answer again"),
-            };
+            ];
 
             LinesParser parser = new LinesParser();
             IResult<PacketNode> packetResult = parser.Parse(lines);
@@ -532,7 +603,7 @@ namespace YetAnotherPacketParserTests
 
         private static FormattedText CreateFormattedText(string text)
         {
-            return new FormattedText(new FormattedTextSegment[] { new FormattedTextSegment(text) });
+            return new FormattedText([new FormattedTextSegment(text)]);
         }
 
         private static BonusPartLine CreatePartLine(string text, int partValue, char? difficultyModifier = null)

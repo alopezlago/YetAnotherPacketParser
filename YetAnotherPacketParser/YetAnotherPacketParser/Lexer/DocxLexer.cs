@@ -68,7 +68,7 @@ namespace YetAnotherPacketParser.Lexer
             }
         }
 
-        private static IEnumerable<ILine> GetLinesFromBody(Body body)
+        private static List<ILine> GetLinesFromBody(Body body)
         {
             // Get the list of lines with OpenXML SDK specific classes, then convert those to format-independent Line
             // instances.

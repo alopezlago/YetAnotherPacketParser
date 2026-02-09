@@ -188,36 +188,48 @@ namespace YetAnotherPacketParserCommandLine
 
         private static void WriteMultiplePacketsToHtml(IEnumerable<ConvertResult> packets, CommandLineOptions options)
         {
-            IList<string> htmlBodies = new List<string>();
-            foreach (ConvertResult compileResult in packets.OrderBy(packet => packet.Filename))
-            {
-                string html = compileResult.Result.Value;
-                int bodyStartIndex = html.IndexOf("<body>", StringComparison.OrdinalIgnoreCase);
-                int bodyEndIndex = html.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
-                if (bodyStartIndex == -1 || bodyEndIndex == -1 || bodyStartIndex > bodyEndIndex)
-                {
-                    // Skip, since the HTML was malformed
-                    continue;
-                }
-
-                // Skip past "<body>"
-                bodyStartIndex += 6;
-                string htmlBody = $"<h2>{compileResult.Filename.Replace(".docx", string.Empty, StringComparison.OrdinalIgnoreCase)}</h2>{html.Substring(bodyStartIndex, bodyEndIndex - bodyStartIndex)}";
-
-                htmlBodies.Add(htmlBody);
-            }
-
-            string bundledHtml = $"<html><body>{string.Join("<br>", htmlBodies)}</body></html>";
-
-            using (FileStream stream = new FileStream(options.Output, FileMode.OpenOrCreate, FileAccess.Write))
+            using (FileStream stream = new FileStream(options.Output, FileMode.Create, FileAccess.Write))
             using (StreamWriter writer = new StreamWriter(stream))
             {
-                writer.Write(bundledHtml);
+                writer.Write("<html><body>");
+
+                bool firstItem = true;
+                foreach (ConvertResult compileResult in packets.OrderBy(packet => packet.Filename))
+                {
+                    string html = compileResult.Result.Value;
+                    int bodyStartIndex = html.IndexOf("<body>", StringComparison.OrdinalIgnoreCase);
+                    int bodyEndIndex = html.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+                    if (bodyStartIndex == -1 || bodyEndIndex == -1 || bodyStartIndex > bodyEndIndex)
+                    {
+                        // Skip, since the HTML was malformed
+                        continue;
+                    }
+
+                    // Advance past "<body>"
+                    bodyStartIndex += 6;
+                    ReadOnlySpan<char> bodySpan = html.AsSpan(bodyStartIndex, bodyEndIndex - bodyStartIndex);
+
+                    if (!firstItem)
+                    {
+                        writer.Write("<br>");
+                    }
+
+                    string title = compileResult.Filename.Replace(".docx", string.Empty, StringComparison.OrdinalIgnoreCase);
+                    writer.Write("<h2>");
+                    writer.Write(title);
+                    writer.Write("</h2>");
+
+                    writer.Write(bodySpan);
+
+                    firstItem = false;
+                }
+
+                writer.Write("</body></html>");
             }
         }
 
         // TODO: See how to share this between the function and the command line        
-        private class JsonPacket
+        private sealed class JsonPacket
         {
             // Lower-cased so that it appears lowercased in the JSON output
             public string name { get; set; }

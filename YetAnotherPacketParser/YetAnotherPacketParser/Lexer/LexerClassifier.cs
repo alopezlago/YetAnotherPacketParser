@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace YetAnotherPacketParser.Lexer
@@ -6,14 +7,17 @@ namespace YetAnotherPacketParser.Lexer
     internal static class LexerClassifier
     {
         private const int DefaultBonusPartValue = 10;
+        private const string BonusValueGroupName = "value";
+
         // Include spaces after the start tag so we get all of the spaces in a match, and we can avoid having to trim
         // them manually.
         private static readonly Regex AnswerRegEx = new Regex(
-            "^\\s*ANS(WER)?\\s*(:|\\.)\\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            "^\\s*ANS(WER)?\\s*(:|\\.)\\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
         private static readonly Regex QuestionDigitRegEx = new Regex(
             "^\\s*(\\d+|tb|tie(breaker)?)\\s*\\.\\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex BonusPartValueRegex = new Regex(
-            "^\\s*\\[(\\s*(\\d)+\\s*[ehm]?\\s*|\\s*[ehm]\\s*)\\]\\s*", RegexOptions.Compiled);
+            "^\\s*\\[(?<value>\\s*(\\d+\\s*[ehm]?\\s*|[ehm]\\s*))\\]\\s*",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.ExplicitCapture);
         private static readonly Regex PostQuestionMetadataRegex = new Regex(
             "^\\s*<[^<>]+>\\s*", RegexOptions.Compiled);
 
@@ -28,8 +32,11 @@ namespace YetAnotherPacketParser.Lexer
                 return false;
             }
 
+            // Use the captured group to get the numeric part without needing to replace/remove the braces and make
+            // new strings.
             matchValue = match.Value;
-            if (int.TryParse(match.Value.Replace(".", string.Empty, StringComparison.Ordinal), out int parsedNumber))
+            string numericPart = match.Groups[1].Value;
+            if (int.TryParse(numericPart, out int parsedNumber))
             {
                 // We could be at a tiebreaker, so don't fail if we can't find the number
                 number = parsedNumber;
@@ -64,17 +71,17 @@ namespace YetAnotherPacketParser.Lexer
             }
 
             matchValue = match.Value;
-            string partValueText = match.Value
-                .Replace("[", string.Empty, StringComparison.Ordinal)
-                .Replace("]", string.Empty, StringComparison.Ordinal)
-                .Trim();
+            ReadOnlySpan<char> partValueText = match.Groups[BonusValueGroupName].Value.AsSpan().Trim();
 
             // If there's a difficulty modifier at the last character, include it. It's optional.
-            char lastLetter = partValueText[^1];
-            if (char.IsLetter(lastLetter))
+            if (partValueText.Length > 0)
             {
-                difficultyModifier = lastLetter;
-                partValueText = partValueText.Substring(0, partValueText.Length - 1);
+                char lastLetter = partValueText[^1];
+                if (char.IsLetter(lastLetter))
+                {
+                    difficultyModifier = char.ToLower(lastLetter, CultureInfo.InvariantCulture);
+                    partValueText = partValueText.Slice(0, partValueText.Length - 1).TrimEnd();
+                }
             }
 
             if (partValueText.Length == 0)
