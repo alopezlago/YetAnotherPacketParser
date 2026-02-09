@@ -10,8 +10,9 @@ namespace YetAnotherPacketParser.Parser
 {
     internal class LinesParser : IParser
     {
-        private const int FailureSnippetCharacterLimit = 40;
-        private const int MaximumFailureMessagesPerSection = 10;
+        // Used in tests
+        internal const int FailureSnippetCharacterLimit = 40;
+        internal const int MaximumFailureMessagesPerSection = 10;
 
         /// <summary>
         /// Converts the list of lines into an abstract syntax tree, with the PacketNode as a root.
@@ -311,7 +312,7 @@ namespace YetAnotherPacketParser.Parser
                     }
 
                     errorMessages.AddRange(bonusResult.ErrorMessages);
-                    if (errorMessages.Count > MaximumFailureMessagesPerSection)
+                    if (errorMessages.Count >= MaximumFailureMessagesPerSection)
                     {
                         break;
                     }

@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetAnotherPacketParserTests
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YetAnotherPacketParserAPI", "YetAnotherPacketParserAPI\YetAnotherPacketParserAPI.csproj", "{90AD57C5-763C-494E-AE92-F90BB0BB5A88}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "BenchmarkSuite1\Benchmarks.csproj", "{A20861A9-411E-6150-BF5C-69E8196E5D22}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{90AD57C5-763C-494E-AE92-F90BB0BB5A88}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90AD57C5-763C-494E-AE92-F90BB0BB5A88}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90AD57C5-763C-494E-AE92-F90BB0BB5A88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A20861A9-411E-6150-BF5C-69E8196E5D22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A20861A9-411E-6150-BF5C-69E8196E5D22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A20861A9-411E-6150-BF5C-69E8196E5D22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A20861A9-411E-6150-BF5C-69E8196E5D22}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

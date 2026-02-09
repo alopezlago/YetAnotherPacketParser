@@ -131,13 +131,7 @@ namespace YetAnotherPacketParser.Compiler
                     this.CachedShortSegments[rawSegment.Text] = sanitizedText;
                 }
 
-                FormattedTextSegment sanitizedFormattedText = new FormattedTextSegment(
-                    sanitizedText,
-                    rawSegment.Italic,
-                    rawSegment.Bolded,
-                    rawSegment.Underlined,
-                    rawSegment.IsSubscript,
-                    rawSegment.IsSuperscript);
+                FormattedTextSegment sanitizedFormattedText = new FormattedTextSegment(sanitizedText, rawSegment);
                 sanitizedFormattedTexts.Add(sanitizedFormattedText);
             }
 

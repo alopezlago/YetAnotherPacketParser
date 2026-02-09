@@ -20,6 +20,13 @@ namespace YetAnotherPacketParser
             this.IsSuperscript = isSuperscript;
         }
 
+        public FormattedTextSegment(
+            string newText,
+            FormattedTextSegment segment)
+            : this(newText, segment.Italic, segment.Bolded, segment.Underlined, segment.IsSuperscript, segment.IsSubscript)
+        {
+        }
+
         public string Text { get; }
 
         public bool Italic { get; }
@@ -31,6 +38,8 @@ namespace YetAnotherPacketParser
         public bool IsSubscript { get; }
 
         public bool IsSuperscript { get; }
+
+        public ReadOnlySpan<char> AsSpan() => this.Text.AsSpan();
 
         public override string ToString()
         {

@@ -64,29 +64,33 @@ namespace YetAnotherPacketParser
                 if (!readStreamResult.Item1)
                 {
                     // Assume it's HTML for now, and refactor if we need to support more input formats
-                    return new ConvertResult[]
-                    {
+                    return
+                    [
                         await CompilePacketAsync(options.StreamName, stream, options, FileType.Html).ConfigureAwait(false)
-                    };
+                    ];
                 }
 
                 using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
                 {
-                    bool hasWordDocumentBody = archive.Entries
+                    // Materialize entries once to avoid multiple enumerations of archive.Entries
+                    List<ZipArchiveEntry> entries = archive.Entries.ToList();
+
+                    bool hasWordDocumentBody = entries
                         .Any(entry => "word/document.xml".Equals(entry.FullName, StringComparison.OrdinalIgnoreCase));
-                    if (hasWordDocumentBody && !archive.Entries
+                    if (hasWordDocumentBody && !entries
                         .Any(entry => entry.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)))
                     {
                         ConvertResult result = await CompilePacketAsync(options.StreamName, stream, options, FileType.Docx)
                             .ConfigureAwait(false);
-                        return new ConvertResult[] { result };
+                        return new[] { result };
                     }
 
-                    IEnumerable<ZipArchiveEntry> docxEntries = archive.Entries
-                        .Where(entry => entry.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase));
+                    List<ZipArchiveEntry> docxEntries = entries
+                        .Where(entry => entry.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
 
                     // TODO: If these checks are too slow, we should combine them in one loop through the file
-                    if (docxEntries.Count() > options.MaximumPackets)
+                    if (docxEntries.Count > options.MaximumPackets)
                     {
                         return CreateFailedCompileResultArray(
                             options.StreamName, Strings.TooManyPacketsToParse(options.MaximumPackets));
@@ -133,7 +137,7 @@ namespace YetAnotherPacketParser
 
         private static ConvertResult[] CreateFailedCompileResultArray(string streamName, string message)
         {
-            return new ConvertResult[] { CreateFailedCompileResult(streamName, message) };
+            return [CreateFailedCompileResult(streamName, message)];
         }
 
         private static ConvertResult CreateFailedCompileResult(string streamName, string message)

@@ -29,7 +29,7 @@ namespace YetAnotherPacketParser.Lexer
                     }
                 }
 
-                IList<FormattedText> textLines = GetTextLines(body);
+                List<FormattedText> textLines = GetTextLines(body);
                 return ClassifyLines(textLines);
             }
             // Unfortunately, we don't know what AngleSharp can throw, so we have to catch-all from here
@@ -46,9 +46,9 @@ namespace YetAnotherPacketParser.Lexer
         }
 
         // We get the root paragraphs, then get all of the lines included in the root paragraph
-        private static IList<FormattedText> GetTextLines(IHtmlElement body)
+        private static List<FormattedText> GetTextLines(IHtmlElement body)
         {
-            IList<FormattedText> formattedTexts = new List<FormattedText>();
+            List<FormattedText> formattedTexts = new List<FormattedText>();
             Formatting previousFormatting = new Formatting();
 
             foreach (IElement paragraph in body.Children
@@ -60,8 +60,7 @@ namespace YetAnotherPacketParser.Lexer
                     if (!string.IsNullOrEmpty(textContent))
                     {
                         formattedTexts.Add(new FormattedText(
-                            new FormattedTextSegment[]
-                            {
+                            [
                                 new FormattedTextSegment(
                                     paragraph.TextContent,
                                     previousFormatting.Italic,
@@ -69,13 +68,13 @@ namespace YetAnotherPacketParser.Lexer
                                     previousFormatting.Underlined,
                                     previousFormatting.Subscripted,
                                     previousFormatting.Superscripted)
-                            }));
+                            ]));
                     }
 
                     continue;
                 }
 
-                IList<FormattedTextSegment> segments = new List<FormattedTextSegment>();
+                List<FormattedTextSegment> segments = new List<FormattedTextSegment>();
                 GetString(paragraph, formattedTexts, segments, previousFormatting);
                 if (segments.Count > 0)
                 {
@@ -86,10 +85,10 @@ namespace YetAnotherPacketParser.Lexer
             return formattedTexts;
         }
 
-        private static IResult<IEnumerable<ILine>> ClassifyLines(IList<FormattedText> formattedTexts)
+        private static SuccessResult<IEnumerable<ILine>> ClassifyLines(List<FormattedText> formattedTexts)
         {
             int currentQuestionNumber = 1;
-            IList<ILine> lines = new List<ILine>();
+            List<ILine> lines = new List<ILine>();
 
             foreach (FormattedText formattedText in formattedTexts)
             {

@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -12,35 +13,31 @@ namespace YetAnotherPacketParser.Compiler.Json
         public JsonCompiler(JsonCompilerOptions? options = null)
         {
             this.Options = options ?? JsonCompilerOptions.Default;
+            this.SerializerOptions = new JsonSerializerOptions()
+            {
+                AllowTrailingCommas = true,
+                PropertyNamingPolicy = new PascalCaseJsonNamingPolicy(),
+                WriteIndented = this.Options.PrettyPrint,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
         }
 
         private JsonCompilerOptions Options { get; }
 
+        private JsonSerializerOptions SerializerOptions { get; }
+
         public async Task<string> CompileAsync(PacketNode packet)
         {
             Verify.IsNotNull(packet, nameof(packet));
-
             SanitizeHtmlTransformer sanitizer = new SanitizeHtmlTransformer();
             PacketNode sanitizedPacket = sanitizer.Sanitize(packet);
-
-            // The format that Jerry's parser uses for JSON (and that the reader expects as a result) is different
-            // than the structure of the PacketNode, so transform it to a structure close to it (minus author and
-            // packet fields)
-            JsonPacketNode sanitizedJsonPacket = new JsonPacketNode(sanitizedPacket, this.Options.ModaqFormat);
+            JsonPacketNode packetNode = new JsonPacketNode(sanitizedPacket, this.Options.ModaqFormat);
 
             using (Stream stream = new MemoryStream())
             {
-                JsonSerializerOptions serializerOptions = new JsonSerializerOptions()
-                {
-                    AllowTrailingCommas = true,
-                    PropertyNamingPolicy = new PascalCaseJsonNamingPolicy(),
-                    WriteIndented = this.Options.PrettyPrint,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                };
-
                 // TODO: If we decide to host this directly in an ASP.Net context, remove ConfigureAwait calls
                 // see https://devblogs.microsoft.com/dotnet/configureawait-faq/
-                await JsonSerializer.SerializeAsync(stream, sanitizedJsonPacket, serializerOptions).ConfigureAwait(false);
+                await JsonSerializer.SerializeAsync(stream, packetNode, this.SerializerOptions).ConfigureAwait(false);
 
                 // Reset the stream
                 stream.Position = 0;
