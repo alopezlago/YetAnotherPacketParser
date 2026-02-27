@@ -23,7 +23,7 @@ namespace YetAnotherPacketParser
         public FormattedTextSegment(
             string newText,
             FormattedTextSegment segment)
-            : this(newText, segment.Italic, segment.Bolded, segment.Underlined, segment.IsSuperscript, segment.IsSubscript)
+            : this(newText, segment.Italic, segment.Bolded, segment.Underlined, segment.IsSubscript, segment.IsSuperscript)
         {
         }
 
