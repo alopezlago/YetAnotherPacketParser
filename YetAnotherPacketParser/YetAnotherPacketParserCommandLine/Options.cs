@@ -18,7 +18,8 @@ namespace YetAnotherPacketParserCommandLine
         [Option(
             'f',
             "format",
-            HelpText = "Output format. The possible values are 'json' and 'html'. JSON is the default format.",
+            HelpText = "Output format. The possible values are 'json', 'yapp2' and 'html'. JSON is the default format. " +
+                "yapp2 is JSON plus the pronunciation guide anchoring from colored text in the document.",
             Default = "json")]
         public string OutputFormat { get; set; }
 

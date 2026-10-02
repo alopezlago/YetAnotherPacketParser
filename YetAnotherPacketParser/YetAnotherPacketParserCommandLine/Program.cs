@@ -49,15 +49,18 @@ namespace YetAnotherPacketParserCommandLine
 
             IPacketConverterOptions packetCompilerOptions;
             Action<LogLevel, string> log = (logLevel, message) => Log(options, logLevel, message);
-            switch (options.OutputFormat.Trim().ToUpper(CultureInfo.CurrentCulture))
+            string outputFormat = options.OutputFormat.Trim().ToUpper(CultureInfo.CurrentCulture);
+            switch (outputFormat)
             {
                 case "JSON":
+                case "YAPP2":
                     packetCompilerOptions = new JsonPacketCompilerOptions()
                     {
                         StreamName = options.Input,
                         PrettyPrint = options.PrettyPrint,
                         Log = log,
-                        ModaqFormat = options.ForModaq
+                        ModaqFormat = options.ForModaq,
+                        Yapp2Format = outputFormat == "YAPP2"
                     };
                     break;
                 case "HTML":
@@ -68,7 +71,7 @@ namespace YetAnotherPacketParserCommandLine
                     };
                     break;
                 default:
-                    await Console.Error.WriteLineAsync("Invalid format. Valid formats: json, html").ConfigureAwait(true);
+                    await Console.Error.WriteLineAsync("Invalid format. Valid formats: json, yapp2, html").ConfigureAwait(true);
                     return;
             }
 

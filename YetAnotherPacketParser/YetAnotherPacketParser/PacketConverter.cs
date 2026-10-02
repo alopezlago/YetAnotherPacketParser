@@ -214,7 +214,8 @@ namespace YetAnotherPacketParser
                     JsonCompilerOptions compilerOptions = new JsonCompilerOptions()
                     {
                         PrettyPrint = options.PrettyPrint,
-                        ModaqFormat = options.ModaqFormat
+                        ModaqFormat = options.ModaqFormat,
+                        Yapp2Format = options.Yapp2Format
                     };
                     JsonCompiler compiler = new JsonCompiler(compilerOptions);
                     outputContents = await compiler.CompileAsync(packetNode).ConfigureAwait(false);

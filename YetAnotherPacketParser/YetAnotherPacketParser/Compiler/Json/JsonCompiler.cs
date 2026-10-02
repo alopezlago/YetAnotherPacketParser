@@ -31,7 +31,8 @@ namespace YetAnotherPacketParser.Compiler.Json
             Verify.IsNotNull(packet, nameof(packet));
             SanitizeHtmlTransformer sanitizer = new SanitizeHtmlTransformer();
             PacketNode sanitizedPacket = sanitizer.Sanitize(packet);
-            JsonPacketNode packetNode = new JsonPacketNode(sanitizedPacket, this.Options.ModaqFormat);
+            JsonPacketNode packetNode = new JsonPacketNode(
+                sanitizedPacket, this.Options.ModaqFormat, this.Options.Yapp2Format);
 
             using (Stream stream = new MemoryStream())
             {

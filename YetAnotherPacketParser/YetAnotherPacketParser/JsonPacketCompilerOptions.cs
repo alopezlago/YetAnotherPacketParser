@@ -10,6 +10,7 @@ namespace YetAnotherPacketParser
             this.MaximumPackets = 1000;
             this.MaximumPacketSizeInBytes = 1 * 1024 * 1024; // 1 MB
             this.ModaqFormat = false;
+            this.Yapp2Format = false;
             this.PrettyPrint = true;
         }
 
@@ -25,6 +26,8 @@ namespace YetAnotherPacketParser
         public int MaximumPacketSizeInBytes { get; set; }
 
         public bool ModaqFormat { get; set; }
+
+        public bool Yapp2Format { get; set; }
 
         public bool PrettyPrint { get; set; }
 

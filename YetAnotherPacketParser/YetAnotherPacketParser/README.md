@@ -21,6 +21,14 @@ If you want to output it to an HTML file, set the format to html
 
 `YetAnotherPacketParserCommandLine.exe -i C:\qbsets\packet1.docx -o C:\qbsets\packet1.json -f html`
 
+To write the packet in the yapp2 format - the same JSON, plus a `version` marker and the `anchored` fields saying which
+words a pronunciation guide covers - set the format to yapp2
+
+`YetAnotherPacketParserCommandLine.exe -i C:\qbsets\packet1.docx -o C:\qbsets\packet1.json -f yapp2`
+
+Anchors come from colored text in a .docx file that a guide immediately follows, or from `<pg>` tags in an HTML file.
+See the repository README and YAPP2_FORMAT.md for the details.
+
 To see the list of all flags, run
 
 `YetAnotherPacketParserCommandLine.exe --help`

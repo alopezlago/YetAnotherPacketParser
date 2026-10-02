@@ -163,6 +163,10 @@ namespace YetAnotherPacketParserAPI
         private static IPacketConverterOptions GetOptions(HttpRequest request, ILogger log)
         {
             OutputFormat outputFormat;
+
+            // yapp2 is JSON with the pronunciation guide anchoring included, so it's a flag on the JSON output
+            // rather than an output format of its own
+            bool yapp2Format = false;
             if (TryGetStringValueFromQuery(request, "format", out string? outputFormatString))
             {
                 log.LogInformation($"Parsed format: {outputFormatString}");
@@ -173,6 +177,10 @@ namespace YetAnotherPacketParserAPI
                         break;
                     case "JSON":
                         outputFormat = OutputFormat.Json;
+                        break;
+                    case "YAPP2":
+                        outputFormat = OutputFormat.Json;
+                        yapp2Format = true;
                         break;
                     default:
                         outputFormat = OutputFormat.Json;
@@ -227,6 +235,7 @@ namespace YetAnotherPacketParserAPI
                         MaximumPackets = MaximumPackets,
                         MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
                         ModaqFormat = modaqFormat,
+                        Yapp2Format = yapp2Format,
                         Log = logMessage
                     };
                 default:
@@ -238,6 +247,7 @@ namespace YetAnotherPacketParserAPI
                         MaximumPackets = MaximumPackets,
                         MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
                         ModaqFormat = modaqFormat,
+                        Yapp2Format = yapp2Format,
                         Log = logMessage
                     };
             }

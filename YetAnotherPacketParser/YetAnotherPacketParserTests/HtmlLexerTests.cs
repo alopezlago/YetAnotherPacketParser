@@ -224,5 +224,44 @@ namespace YetAnotherPacketParserTests
                 classifiedLines[6].Text.UnformattedText.Trim(),
                 "Unexpected text for the seventh line");
         }
+
+        [TestMethod]
+        public async Task PgTagIsAPronunciationAnchor()
+        {
+            const string htmlPacket = @"<html>
+    <body>
+        <p>1. Denis <pg>Diderot</pg> (""DID-er-OW"") edited <b>this <pg>work</pg></b>.<br>ANSWER: <b>Encyclopedie</b></br></p>
+    </body>
+</html>";
+
+            IResult<IEnumerable<ILine>> result = null;
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(htmlPacket)))
+            {
+                ILexer lexer = new HtmlLexer();
+                result = await lexer.GetLines(stream);
+                Assert.IsTrue(result.Success, "Lexing failed");
+            }
+
+            ILine[] classifiedLines = result.Value.Where(line => line.Type != LineType.Unclassified).ToArray();
+
+            // The tag is explicit, so unlike colored text in a docx file it's an anchor even with no guide after it
+            FormattedTextSegment[] expectedSegments =
+            [
+                new FormattedTextSegment("Denis "),
+                new FormattedTextSegment("Diderot", isPronunciationAnchor: true),
+                new FormattedTextSegment(" (\"DID-er-OW\") edited "),
+                new FormattedTextSegment("this ", bolded: true),
+                new FormattedTextSegment("work", bolded: true, isPronunciationAnchor: true),
+                new FormattedTextSegment(".")
+            ];
+            CollectionAssert.AreEqual(
+                expectedSegments,
+                classifiedLines[0].Text.Segments.ToArray(),
+                "Question segments don't match");
+
+            Assert.IsFalse(
+                classifiedLines[1].Text.Segments.Any(segment => segment.IsPronunciationAnchor),
+                "The anchor shouldn't carry over to the answer line");
+        }
     }
 }
