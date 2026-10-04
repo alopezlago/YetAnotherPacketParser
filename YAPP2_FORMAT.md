@@ -6,10 +6,13 @@ and consumed by the MODAQ reader.
 
 It exists to carry things plain YAPP cannot:
 
-- **which words a pronunciation guide covers** (1.0), and
-- **the order a packet is read in** when tossups and bonuses interlace (1.1).
+- **which words a pronunciation guide covers** (1.0),
+- **the order a packet is read in** when tossups and bonuses interlace (1.1), and
+- **the rules of the game the packet is written for** — regulation length, power markers
+  and their values, neg value, and so on — so a reader doesn't have to set the game up
+  by hand each time (1.2).
 
-Version: **`yapp2/1.1`**.
+Version: **`yapp2/1.2`**.
 
 ## The problem
 
@@ -38,8 +41,15 @@ would have them, and the anchored variants live beside them.
 
 ```json
 {
-  "version": "yapp2/1.1",
+  "version": "yapp2/1.2",
   "name": "Round 1",
+  "gameFormat": {
+    "displayName": "mACF with powers",
+    "regulationTossupCount": 20,
+    "powers": [{"marker": "(*)", "points": 15}],
+    "negValue": -5,
+    "bonusesBounceBack": false
+  },
   "readingOrder": [
     {"type": "tossup", "index": 0},
     {"type": "bonus", "index": 0}
@@ -70,18 +80,88 @@ would have them, and the anchored variants live beside them.
 }
 ```
 
-Everything except `version`, `readingOrder` and `anchored` is unchanged from YAPP.
+Everything except `version`, `gameFormat`, `readingOrder` and `anchored` is unchanged
+from YAPP.
 
 ### `version`
 
 A string, `"yapp2/<major>.<minor>"`. Its absence means the file is plain YAPP, and a
-reader must then ignore `anchored` and `readingOrder` entirely — a file that omits the
+reader must then ignore `anchored`, `readingOrder` and `gameFormat` entirely — a file that omits the
 marker has not promised that its canonical fields are tag-free, so trusting `anchored`
 there risks rendering a tag the file never declared.
 
 Compare case-insensitively on the `yapp2/` prefix. A reader that understands
 `yapp2/1.0` should accept later `1.x` minor versions, since minor bumps only add
 optional fields.
+
+### `gameFormat`
+
+*Added in 1.2.* Optional, top level. The rules of the game the packet is written for, so
+a reader can set the game up from the packet instead of the moderator customizing it
+every time.
+
+```json
+"gameFormat": {
+  "displayName": "mACF with powers",
+  "regulationTossupCount": 20,
+  "minimumOvertimeQuestionCount": 1,
+  "overtimeIncludesBonuses": false,
+  "powers": [{"marker": "(+)", "points": 20}, {"marker": "(*)", "points": 15}],
+  "negValue": -5,
+  "bonusesBounceBack": false,
+  "timeoutsAllowed": 1,
+  "tossupsOnly": false,
+  "pronunciationGuideMarkers": ["(\"", "\")"]
+}
+```
+
+| Key | Type | Meaning |
+|---|---|---|
+| `displayName` | string | The format's name, such as `"ACF"` or `"PACE"`. |
+| `regulationTossupCount` | int | Tossups in regulation, not counting tiebreakers. |
+| `minimumOvertimeQuestionCount` | int | The fewest tossups read in overtime before a tied game can end. |
+| `overtimeIncludesBonuses` | bool | Whether an overtime tossup earns a bonus. |
+| `powers` | array | Power markers and what a correct buzz before each is worth (below). |
+| `negValue` | int | Points for an incorrect interrupt, e.g. `-5`. `0` means no negs. |
+| `bonusesBounceBack` | bool | Whether the other team can answer bonus parts the controlling team misses. |
+| `timeoutsAllowed` | int | Timeouts per team. |
+| `tossupsOnly` | bool | Whether the format has no bonuses. |
+| `pronunciationGuideMarkers` | [string, string] | The text that opens and closes a guide, e.g. `["(\"", "\")"]`. |
+
+The key names are MODAQ's game format names, so a reader built on MODAQ can apply the
+object directly.
+
+Rules:
+
+- **Every key is optional.** A key that is present sets that rule; a key that is absent
+  leaves it to the reader, which uses whatever it would have used for a plain YAPP
+  packet. A producer writes only what it actually knows.
+- **It is a default, not a lock.** A reader should start the game with these rules but
+  still let the moderator change them.
+- **A bad key is ignored on its own.** A key with the wrong type or an impossible value
+  (a negative tossup count, a guide marker array that isn't two strings) is dropped and
+  the rest of the object still applies. Readers also ignore keys they don't know, so a
+  later minor version can add rules.
+- **Each packet carries its own.** A reader loading several packets at once can use the
+  first one's format, or warn when they disagree.
+
+#### `powers`
+
+An array of `{"marker": <string>, "points": <int>}`, **highest `points` first**.
+
+- `marker` is the literal text in the tossup's canonical `question` that ends that power
+  region, such as `(*)` or `(+)`. A correct buzz is worth the `points` of the first
+  marker after the buzzed word, so with superpowers — `(+)` then `(*)` — a buzz before
+  `(+)` earns its points and a buzz between the two earns `(*)`'s. After the last marker
+  a tossup is worth its normal value.
+- An **empty array** means the format has no powers. That is different from leaving
+  `powers` out, which means the packet doesn't say.
+- A marker that never appears in a tossup simply never applies to that tossup.
+
+Powers are identified by marker rather than by word position for the same reason
+anchors travel inside the text: the marker is already in the question, so the two
+can't fall out of sync, while a word index silently goes stale when anyone edits the
+question.
 
 ### `readingOrder`
 
@@ -167,8 +247,11 @@ lose nothing but the anchoring.
 ## Producing YAPP2
 
 Emit both forms of a field, then drop the anchored one if it came out identical. A
-producer that has no anchoring information should emit plain YAPP (no `version`) rather
-than a YAPP2 file with no `anchored` objects.
+producer with nothing YAPP2 to say — no anchors, no `readingOrder` and no `gameFormat` —
+should emit plain YAPP (no `version`) rather than an empty YAPP2 file.
+
+Write `gameFormat` only with the rules the producer actually knows, sort `powers`
+highest first, and use the marker exactly as it appears in the questions.
 
 Write `readingOrder` only when the packet really is read out of the default order.
 Emitting the default order explicitly is legal but pointless, and it invites a reader to
@@ -184,6 +267,10 @@ whole question. (QEMS does this; see `all_power_tail` in its `yapp_export`.)
 
 ```
 if version starts with "yapp2/":
+    if gameFormat is present:
+        start from the reader's default game format
+        apply each gameFormat key that is well-formed; ignore the rest
+        let the moderator still change any of it
     for each question:
         for each field:
             use anchored[field] if present (and, for arrays, the same length)
@@ -193,7 +280,7 @@ if version starts with "yapp2/":
     else:
         present all tossups, then all bonuses
 else:
-    read as plain YAPP; ignore anchored and readingOrder
+    read as plain YAPP; ignore anchored, readingOrder and gameFormat
 ```
 
 Because the two forms differ only by `<pg>`, a reader that understands the tag loses
@@ -206,7 +293,10 @@ nothing by always preferring the anchored text.
   follows in a .docx file (`Lexer/PronunciationAnchorFilter.cs`) or from `<pg>` tags in an HTML file
   (`Lexer/HtmlLexer.cs`); `Compiler/Json/JsonAnchoredTossupNode.cs` and `JsonAnchoredBonusNode.cs` write the
   `anchored` objects. It never writes `readingOrder`, since it always reads a document's tossups and then its
-  bonuses, and it writes plain YAPP when a packet has no anchors.
+  bonuses. It writes `gameFormat` from `-g`/`--gameFormat` on the command line (`acf`, `macf`, `pace`, or a
+  JSON file), `?gameFormat=` on the API (the named formats only), or `GameFormat` on `JsonPacketCompilerOptions`,
+  and logs a warning when a power marker isn't in any tossup. It writes plain YAPP when a packet has no anchors
+  and no game format.
 - **QEMS** (producer): `qems2/qsub/yapp_export.py` writes it; `qems2/qsub/packet_set_importer.py`
   reads it back, mapping `<pg>` to QEMS's own `\P` markers. Exported from a set's page
   via "Export Packetized YAPP2 JSON", or from the export options form with
@@ -218,6 +308,9 @@ nothing by always preferring the anchored text.
   MODAQ already plays a packet interlaced — a tossup, then its bonus — so `readingOrder`
   does not change how a game runs there; it is kept so a load/export round trip doesn't
   silently drop it. That repo and QEMS carry copies of this document.
+- `gameFormat` (1.2) is new: QEMS doesn't write it and MODAQ doesn't apply it yet. A
+  reader that follows the version rule above still reads a 1.2 file, ignoring
+  `gameFormat`.
 
 ## Why not other approaches
 
@@ -228,4 +321,8 @@ nothing by always preferring the anchored text.
   anything edits the string. Anchors that travel inside the text can't desynchronize
   from it.
 - **A separate sidecar file** — packets are passed around as single files; anything not
-  in the JSON gets lost.
+  in the JSON gets lost. This is also why `gameFormat` lives in each packet rather than
+  in a set-level file.
+- **Power positions as word indexes** — the marker is already in the question text, so
+  naming it ties the power to the text; an index would go stale when the question is
+  edited, and would disagree with readers that count words differently.

@@ -24,7 +24,7 @@ namespace YetAnotherPacketParserTests
             {
                 JsonElement root = document.RootElement;
                 Assert.AreEqual(
-                    "yapp2/1.1",
+                    "yapp2/1.2",
                     root.GetProperty("version").GetString(),
                     "Without the version marker a reader has to ignore the anchored fields");
 
@@ -216,7 +216,7 @@ namespace YetAnotherPacketParserTests
                 using (JsonDocument document = JsonDocument.Parse(convertResult.Result.Value))
                 {
                     JsonElement root = document.RootElement;
-                    Assert.AreEqual("yapp2/1.1", root.GetProperty("version").GetString());
+                    Assert.AreEqual("yapp2/1.2", root.GetProperty("version").GetString());
 
                     JsonElement tossup = root.GetProperty("tossups")[0];
                     Assert.AreEqual(
@@ -253,12 +253,174 @@ namespace YetAnotherPacketParserTests
             }
         }
 
-        private static async Task<string> Compile(PacketNode packet, bool yapp2Format)
+        [TestMethod]
+        public async Task GameFormatIsWritten()
+        {
+            Assert.IsTrue(GameFormat.TryGetPreset("macf", out GameFormat gameFormat), "macf should be a preset");
+            string result = await Compile(CreatePacketWithoutAnchors(), yapp2Format: true, gameFormat);
+
+            using (JsonDocument document = JsonDocument.Parse(result))
+            {
+                JsonElement root = document.RootElement;
+                Assert.AreEqual(
+                    "yapp2/1.2",
+                    root.GetProperty("version").GetString(),
+                    "A game format is something yapp2 has to say, even without anchors");
+
+                JsonElement format = root.GetProperty("gameFormat");
+                Assert.AreEqual(20, format.GetProperty("regulationTossupCount").GetInt32());
+                Assert.AreEqual(-5, format.GetProperty("negValue").GetInt32());
+                Assert.IsFalse(format.GetProperty("bonusesBounceBack").GetBoolean());
+
+                JsonElement powers = format.GetProperty("powers");
+                Assert.AreEqual(1, powers.GetArrayLength());
+                Assert.AreEqual("(*)", powers[0].GetProperty("marker").GetString());
+                Assert.AreEqual(15, powers[0].GetProperty("points").GetInt32());
+
+                JsonElement guideMarkers = format.GetProperty("pronunciationGuideMarkers");
+                Assert.AreEqual("(\"", guideMarkers[0].GetString());
+                Assert.AreEqual("\")", guideMarkers[1].GetString());
+            }
+        }
+
+        [TestMethod]
+        public async Task GameFormatPowersAreWrittenHighestFirst()
+        {
+            GameFormat gameFormat = new GameFormat()
+            {
+                Powers = [new PowerMarker("(*)", 15), new PowerMarker("(+)", 20)]
+            };
+
+            string result = await Compile(CreatePacketWithoutAnchors(), yapp2Format: true, gameFormat);
+
+            using (JsonDocument document = JsonDocument.Parse(result))
+            {
+                JsonElement powers = document.RootElement.GetProperty("gameFormat").GetProperty("powers");
+                Assert.AreEqual("(+)", powers[0].GetProperty("marker").GetString(), "Readers expect the highest first");
+                Assert.AreEqual("(*)", powers[1].GetProperty("marker").GetString());
+            }
+
+            Assert.AreEqual(
+                "(*)", gameFormat.Powers[0].Marker, "Writing the packet shouldn't reorder the caller's format");
+        }
+
+        [TestMethod]
+        public async Task GameFormatOnlyWritesFieldsThatAreSet()
+        {
+            GameFormat gameFormat = new GameFormat() { RegulationTossupCount = 24 };
+            string result = await Compile(CreatePacketWithoutAnchors(), yapp2Format: true, gameFormat);
+
+            using (JsonDocument document = JsonDocument.Parse(result))
+            {
+                JsonElement format = document.RootElement.GetProperty("gameFormat");
+                Assert.AreEqual(24, format.GetProperty("regulationTossupCount").GetInt32());
+                Assert.IsFalse(
+                    format.TryGetProperty("negValue", out JsonElement _),
+                    "A field that isn't set is left to the reader, so it shouldn't be written");
+                Assert.IsFalse(
+                    format.TryGetProperty("powers", out JsonElement _),
+                    "Unset powers mean the reader decides, which is different from an empty list (no powers)");
+            }
+        }
+
+        [TestMethod]
+        public async Task EmptyPowersAreWritten()
+        {
+            Assert.IsTrue(GameFormat.TryGetPreset("acf", out GameFormat gameFormat), "acf should be a preset");
+            string result = await Compile(CreatePacketWithoutAnchors(), yapp2Format: true, gameFormat);
+
+            using (JsonDocument document = JsonDocument.Parse(result))
+            {
+                Assert.AreEqual(
+                    0,
+                    document.RootElement.GetProperty("gameFormat").GetProperty("powers").GetArrayLength(),
+                    "An empty list says the format has no powers, so it has to be written");
+            }
+        }
+
+        [TestMethod]
+        public async Task GameFormatIsNotWrittenInPlainJson()
+        {
+            Assert.IsTrue(GameFormat.TryGetPreset("pace", out GameFormat gameFormat), "pace should be a preset");
+            string result = await Compile(CreatePacketWithoutAnchors(), yapp2Format: false, gameFormat);
+
+            using (JsonDocument document = JsonDocument.Parse(result))
+            {
+                Assert.IsFalse(document.RootElement.TryGetProperty("gameFormat", out JsonElement _));
+                Assert.IsFalse(document.RootElement.TryGetProperty("version", out JsonElement _));
+            }
+        }
+
+        [TestMethod]
+        public void PresetsAreCaseInsensitiveCopies()
+        {
+            Assert.IsTrue(GameFormat.TryGetPreset("PACE", out GameFormat first), "Preset names ignore case");
+            first.RegulationTossupCount = 99;
+
+            Assert.IsTrue(GameFormat.TryGetPreset("pace", out GameFormat second));
+            Assert.AreEqual(20, second.RegulationTossupCount, "Changing a preset copy shouldn't change the preset");
+
+            Assert.IsFalse(GameFormat.TryGetPreset("not a format", out GameFormat unknown));
+            Assert.IsNull(unknown);
+        }
+
+        [TestMethod]
+        public async Task MismatchedGameFormatIsLogged()
+        {
+            using (MemoryStream stream = DocxBuilder.CreateDocx(
+                DocxBuilder.CreateParagraph(DocxBuilder.CreateRun("1. This tossup has a power (*) marker.")),
+                DocxBuilder.CreateParagraph(DocxBuilder.CreateRun("ANSWER: Something"))))
+            {
+                List<string> messages = new List<string>();
+                JsonPacketCompilerOptions options = new JsonPacketCompilerOptions()
+                {
+                    StreamName = "packet.docx",
+                    PrettyPrint = false,
+                    Yapp2Format = true,
+                    GameFormat = new GameFormat()
+                    {
+                        RegulationTossupCount = 20,
+                        Powers = [new PowerMarker("(+)", 20), new PowerMarker("(*)", 15)]
+                    },
+                    Log = (logLevel, message) => messages.Add(message)
+                };
+
+                ConvertResult convertResult = await PacketConverter.ConvertPacketAsync(stream, options);
+                Assert.IsTrue(convertResult.Result.Success, $"Conversion failed: {convertResult.Result}");
+
+                Assert.IsTrue(
+                    messages.Exists(message => message.Contains("(+)", System.StringComparison.Ordinal)),
+                    $"The missing (+) marker should be called out. Messages: {string.Join("; ", messages)}");
+                Assert.IsFalse(
+                    messages.Exists(message => message.Contains("marker (*)", System.StringComparison.Ordinal)),
+                    "The (*) marker is in the packet, so it shouldn't be called out");
+                Assert.IsTrue(
+                    messages.Exists(message => message.Contains("20 in regulation", System.StringComparison.Ordinal)),
+                    "A one-tossup packet is short of a 20-tossup regulation game");
+            }
+        }
+
+        private static PacketNode CreatePacketWithoutAnchors()
+        {
+            return new PacketNode(
+                [
+                    new TossupNode(
+                        1,
+                        new QuestionNode(
+                            new FormattedText([new FormattedTextSegment("A power (*) question.")]),
+                            new FormattedText([new FormattedTextSegment("An answer")])),
+                        null)
+                ],
+                bonuses: null);
+        }
+
+        private static async Task<string> Compile(PacketNode packet, bool yapp2Format, GameFormat gameFormat = null)
         {
             JsonCompilerOptions options = new JsonCompilerOptions()
             {
                 PrettyPrint = false,
-                Yapp2Format = yapp2Format
+                Yapp2Format = yapp2Format,
+                GameFormat = gameFormat
             };
 
             return await new JsonCompiler(options).CompileAsync(packet);

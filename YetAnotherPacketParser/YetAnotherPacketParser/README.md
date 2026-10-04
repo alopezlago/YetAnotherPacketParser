@@ -27,6 +27,13 @@ words a pronunciation guide covers - set the format to yapp2
 `YetAnotherPacketParserCommandLine.exe -i C:\qbsets\packet1.docx -o C:\qbsets\packet1.json -f yapp2`
 
 Anchors come from colored text in a .docx file that a guide immediately follows, or from `<pg>` tags in an HTML file.
+
+To also write the rules of the game - regulation tossup count, power markers and their values, neg value, and so on - so
+readers don't have to set them up by hand, pass a game format with `-g`: one of `acf`, `macf` or `pace`, or the path to
+a JSON file with your own
+
+`YetAnotherPacketParserCommandLine.exe -i C:\qbsets\packet1.docx -o C:\qbsets\packet1.json -f yapp2 -g macf`
+
 See the repository README and YAPP2_FORMAT.md for the details.
 
 To see the list of all flags, run

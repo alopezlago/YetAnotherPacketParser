@@ -31,6 +31,15 @@ namespace YetAnotherPacketParserCommandLine
             Default = false)]
         public bool ForModaq { get; set; }
 
+        [Option(
+            'g',
+            "gameFormat",
+            HelpText = "The rules of the game the packet is for, written into yapp2 output so readers don't have to " +
+                "set them up. Either a format name ('acf', 'macf' for ACF with 15-point powers, or 'pace'), or the " +
+                "path to a JSON file with the format, using MODAQ's game format field names. Requires -f yapp2.",
+            Required = false)]
+        public string GameFormat { get; set; }
+
         [Option('v', "verbose", HelpText = "Verbose logging", Required = false, Default = false)]
         public bool Verbose { get; set; }
 

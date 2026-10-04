@@ -215,6 +215,24 @@ namespace YetAnotherPacketParserAPI
                 modaqFormat = false;
             }
 
+            // Only the named formats are accepted here, since the request body is the packet itself
+            GameFormat? gameFormat = null;
+            if (TryGetStringValueFromQuery(request, "gameFormat", out string? gameFormatName))
+            {
+                if (!yapp2Format)
+                {
+                    log.LogWarning("The game format is only written in the yapp2 format. Ignoring it");
+                }
+                else if (GameFormat.TryGetPreset(gameFormatName, out gameFormat))
+                {
+                    log.LogInformation($"Parsed game format: {gameFormatName}");
+                }
+                else
+                {
+                    log.LogWarning($"Unrecognized game format: {gameFormatName}. Ignoring it");
+                }
+            }
+
             Action<YetAnotherPacketParser.LogLevel, string> logMessage = (logLevel, message) => Log(log, logLevel, message);
             switch (outputFormat)
             {
@@ -236,6 +254,7 @@ namespace YetAnotherPacketParserAPI
                         MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
                         ModaqFormat = modaqFormat,
                         Yapp2Format = yapp2Format,
+                        GameFormat = gameFormat,
                         Log = logMessage
                     };
                 default:
@@ -248,6 +267,7 @@ namespace YetAnotherPacketParserAPI
                         MaximumPacketSizeInBytes = MaximumPacketSizeInBytes,
                         ModaqFormat = modaqFormat,
                         Yapp2Format = yapp2Format,
+                        GameFormat = gameFormat,
                         Log = logMessage
                     };
             }

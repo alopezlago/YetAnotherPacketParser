@@ -32,7 +32,7 @@ namespace YetAnotherPacketParser.Compiler.Json
             SanitizeHtmlTransformer sanitizer = new SanitizeHtmlTransformer();
             PacketNode sanitizedPacket = sanitizer.Sanitize(packet);
             JsonPacketNode packetNode = new JsonPacketNode(
-                sanitizedPacket, this.Options.ModaqFormat, this.Options.Yapp2Format);
+                sanitizedPacket, this.Options.ModaqFormat, this.Options.Yapp2Format, this.Options.GameFormat);
 
             using (Stream stream = new MemoryStream())
             {

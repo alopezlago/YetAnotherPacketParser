@@ -29,6 +29,8 @@ namespace YetAnotherPacketParser
 
         public bool Yapp2Format { get; set; }
 
+        public GameFormat? GameFormat { get; set; }
+
         public bool PrettyPrint { get; set; }
 
         public Action<LogLevel, string>? Log { get; set; }

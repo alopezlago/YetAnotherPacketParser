@@ -18,5 +18,11 @@
         /// fields that say which words a pronunciation guide covers.
         /// </summary>
         public bool Yapp2Format { get; set; }
+
+        /// <summary>
+        /// The rules of the game the packet is written for. Only written when <see cref="Yapp2Format"/> is
+        /// <c>true</c>.
+        /// </summary>
+        public GameFormat? GameFormat { get; set; }
     }
 }
