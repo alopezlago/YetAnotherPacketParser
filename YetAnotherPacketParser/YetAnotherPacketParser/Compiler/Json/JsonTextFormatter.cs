@@ -5,11 +5,11 @@ namespace YetAnotherPacketParser.Compiler.Json
 {
     internal static class JsonTextFormatter
     {
-        internal static string ToStringWithTags(FormattedText node)
+        internal static string ToStringWithTags(FormattedText node, bool writePronunciationAnchors = false)
         {
             Verify.IsNotNull(node, nameof(node));
             StringBuilder builder = new StringBuilder();
-            node.WriteFormattedText(builder);
+            node.WriteFormattedText(builder, writePronunciationAnchors);
 
             return builder.ToString();
         }

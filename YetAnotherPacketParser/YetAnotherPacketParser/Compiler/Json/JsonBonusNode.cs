@@ -6,7 +6,7 @@ namespace YetAnotherPacketParser.Compiler.Json
 {
     internal class JsonBonusNode
     {
-        public JsonBonusNode(BonusNode bonusNode, bool omitSanitizedFields)
+        public JsonBonusNode(BonusNode bonusNode, bool omitSanitizedFields, bool yapp2Format = false)
         {
             this.Leadin = JsonTextFormatter.ToStringWithTags(bonusNode.Leadin);
             this.Leadin_sanitized = omitSanitizedFields ?
@@ -14,11 +14,13 @@ namespace YetAnotherPacketParser.Compiler.Json
                 JsonTextFormatter.ToStringWithoutTags(bonusNode.Leadin);
 
             IEnumerable<BonusPartNode> partNodes = bonusNode.Parts;
-            this.Answers = new List<string>();
+            List<string> answers = new List<string>();
+            List<string> parts = new List<string>();
+            this.Answers = answers;
             this.Answers_sanitized = omitSanitizedFields ?
                 null :
                 new List<string>();
-            this.Parts = new List<string>();
+            this.Parts = parts;
             this.Parts_sanitized = omitSanitizedFields ?
                 null :
                 new List<string>(); ;
@@ -37,6 +39,10 @@ namespace YetAnotherPacketParser.Compiler.Json
 
                 this.DifficultyModifiers?.Add(partNode.DifficultyModifier);
             }
+
+            this.Anchored = yapp2Format ?
+                JsonAnchoredBonusNode.Create(bonusNode, this.Leadin, parts, answers) :
+                null;
         }
 
         public string Leadin { get; }
@@ -56,5 +62,11 @@ namespace YetAnotherPacketParser.Compiler.Json
         public ICollection<char?>? DifficultyModifiers { get; }
 
         public string? Metadata { get; }
+
+        /// <summary>
+        /// The yapp2 anchored fields, or <c>null</c> when this bonus has no pronunciation anchors or the output
+        /// isn't yapp2.
+        /// </summary>
+        public JsonAnchoredBonusNode? Anchored { get; }
     }
 }

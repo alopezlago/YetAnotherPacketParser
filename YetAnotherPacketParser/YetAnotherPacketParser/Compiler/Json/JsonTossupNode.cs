@@ -4,7 +4,7 @@ namespace YetAnotherPacketParser.Compiler.Json
 {
     internal class JsonTossupNode
     {
-        public JsonTossupNode(TossupNode node, bool omitSanitizedFields)
+        public JsonTossupNode(TossupNode node, bool omitSanitizedFields, bool yapp2Format = false)
         {
             if (!omitSanitizedFields)
             {
@@ -20,6 +20,9 @@ namespace YetAnotherPacketParser.Compiler.Json
                 null :
                 JsonTextFormatter.ToStringWithoutTags(node.Question.Answer);
             this.Metadata = node.Metadata;
+            this.Anchored = yapp2Format ?
+                JsonAnchoredTossupNode.Create(node, this.Question, this.Answer) :
+                null;
         }
 
         public int? Number { get; }
@@ -34,5 +37,11 @@ namespace YetAnotherPacketParser.Compiler.Json
         public string? Question_sanitized { get; }
 
         public string? Answer_sanitized { get; }
+
+        /// <summary>
+        /// The yapp2 anchored fields, or <c>null</c> when this tossup has no pronunciation anchors or the output
+        /// isn't yapp2.
+        /// </summary>
+        public JsonAnchoredTossupNode? Anchored { get; }
     }
 }

@@ -207,6 +207,11 @@ namespace YetAnotherPacketParser
                         packetNode.Bonuses.Where(bonus => bonus.Parts.Count() != 3).Select((bonus) => bonus.Number)));
             }
 
+            if (options.Log != null && options.Yapp2Format && options.GameFormat != null)
+            {
+                LogGameFormatMismatches(packetName, packetNode, options.GameFormat, options.Log);
+            }
+
             string outputContents;
             switch (options.OutputFormat)
             {
@@ -214,7 +219,9 @@ namespace YetAnotherPacketParser
                     JsonCompilerOptions compilerOptions = new JsonCompilerOptions()
                     {
                         PrettyPrint = options.PrettyPrint,
-                        ModaqFormat = options.ModaqFormat
+                        ModaqFormat = options.ModaqFormat,
+                        Yapp2Format = options.Yapp2Format,
+                        GameFormat = options.GameFormat
                     };
                     JsonCompiler compiler = new JsonCompiler(compilerOptions);
                     outputContents = await compiler.CompileAsync(packetNode).ConfigureAwait(false);
@@ -244,6 +251,35 @@ namespace YetAnotherPacketParser
                 Strings.TimingLog(packetName, timeInMsLines, timeInMsParse, timeInMsCompile, totalTimeMs));
 
             return new ConvertResult(packetName, new SuccessResult<string>(outputContents));
+        }
+
+        // A game format is chosen separately from the packet, so it's easy to pick one that doesn't fit, like a format
+        // with "(+)" powers for a packet marked with "(*)". A reader would then score no powers at all, so call it out.
+        private static void LogGameFormatMismatches(
+            string packetName, PacketNode packetNode, GameFormat gameFormat, Action<LogLevel, string> log)
+        {
+            if (gameFormat.Powers != null)
+            {
+                string[] tossupTexts = packetNode.Tossups
+                    .Select(tossup => tossup.Question.Question.UnformattedText)
+                    .ToArray();
+                foreach (PowerMarker power in gameFormat.Powers)
+                {
+                    if (!tossupTexts.Any(text => text.Contains(power.Marker, StringComparison.Ordinal)))
+                    {
+                        log(LogLevel.Informational, Strings.PowerMarkerNotFound(packetName, power.Marker));
+                    }
+                }
+            }
+
+            int tossupsCount = packetNode.Tossups.Count();
+            if (gameFormat.RegulationTossupCount > tossupsCount)
+            {
+                log(
+                    LogLevel.Informational,
+                    Strings.FewerTossupsThanRegulation(
+                        packetName, tossupsCount, gameFormat.RegulationTossupCount.Value));
+            }
         }
 
         private enum FileType
