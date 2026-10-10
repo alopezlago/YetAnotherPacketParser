@@ -68,7 +68,7 @@ namespace YetAnotherPacketParser
 
         public static string PowerMarkerNotFound(string packetName, string marker)
         {
-            return $"{packetName}: Warning: the game format's power marker {marker} isn't in any tossup.";
+            return $"{packetName}: Warning: the game format's power marker \"{marker}\" isn't in any tossup.";
         }
 
         public static string FewerTossupsThanRegulation(string packetName, int tossupsCount, int regulationTossupCount)

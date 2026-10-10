@@ -26,7 +26,8 @@ namespace YetAnotherPacketParser
         public int? RegulationTossupCount { get; set; }
 
         /// <summary>
-        /// The fewest tossups read in overtime before a tied game can end.
+        /// The fewest tossups read in overtime before a tied game can end. Zero means there's no overtime, and a game
+        /// tied after regulation ends in a tie.
         /// </summary>
         public int? MinimumOvertimeQuestionCount { get; set; }
 
@@ -72,14 +73,14 @@ namespace YetAnotherPacketParser
         public static IEnumerable<string> PresetNames => Presets.Keys;
 
         // These mirror the formats MODAQ ships with, so a packet using one reads exactly as if the moderator had
-        // picked it there
-        private static Dictionary<string, Func<GameFormat>> Presets { get; } =
-            new Dictionary<string, Func<GameFormat>>(StringComparer.OrdinalIgnoreCase)
+        // picked it there. They're built once up front, and TryGetPreset hands out copies so callers can't change them.
+        private static Dictionary<string, GameFormat> Presets { get; } =
+            new Dictionary<string, GameFormat>(StringComparer.OrdinalIgnoreCase)
             {
-                { "acf", () => CreateAcfFormat("ACF", []) },
-                { "macf", () => CreateAcfFormat("mACF with powers", [new PowerMarker("(*)", 15)]) },
+                { "acf", CreateAcfFormat("ACF", []) },
+                { "macf", CreateAcfFormat("mACF with powers", [new PowerMarker("(*)", 15)]) },
                 {
-                    "pace", () => new GameFormat()
+                    "pace", new GameFormat()
                     {
                         DisplayName = "PACE",
                         RegulationTossupCount = 20,
@@ -104,14 +105,77 @@ namespace YetAnotherPacketParser
         /// <returns><c>true</c> if a format has that name.</returns>
         public static bool TryGetPreset(string name, out GameFormat? format)
         {
-            if (name != null && Presets.TryGetValue(name.Trim(), out Func<GameFormat>? createFormat))
+            if (name != null && Presets.TryGetValue(name.Trim(), out GameFormat? preset))
             {
-                format = createFormat();
+                format = preset.Clone();
                 return true;
             }
 
             format = null;
             return false;
+        }
+
+        /// <summary>
+        /// Checks that the format's values make sense, such as a neg value that isn't positive. Fields left as
+        /// <c>null</c> are always valid, since a reader uses its own setting for them.
+        /// </summary>
+        /// <returns>A description of each problem with the format. The list is empty if the format is valid.</returns>
+        public IReadOnlyList<string> Validate()
+        {
+            List<string> errors = new List<string>();
+            if (this.RegulationTossupCount <= 0)
+            {
+                errors.Add($"regulationTossupCount must be positive, but it's {this.RegulationTossupCount}.");
+            }
+
+            if (this.MinimumOvertimeQuestionCount < 0)
+            {
+                errors.Add(
+                    $"minimumOvertimeQuestionCount can't be negative, but it's {this.MinimumOvertimeQuestionCount}.");
+            }
+
+            if (this.NegValue > 0)
+            {
+                errors.Add($"negValue can't be positive, but it's {this.NegValue}.");
+            }
+
+            if (this.TimeoutsAllowed < 0)
+            {
+                errors.Add($"timeoutsAllowed can't be negative, but it's {this.TimeoutsAllowed}.");
+            }
+
+            if (this.Powers != null)
+            {
+                HashSet<string> markers = new HashSet<string>(StringComparer.Ordinal);
+                foreach (PowerMarker? power in this.Powers)
+                {
+                    if (power == null || string.IsNullOrWhiteSpace(power.Marker))
+                    {
+                        errors.Add("Every power needs a marker.");
+                        continue;
+                    }
+
+                    if (power.Points <= 0)
+                    {
+                        errors.Add($"The power marked \"{power.Marker}\" must be worth a positive number of points, " +
+                            $"but it's worth {power.Points}.");
+                    }
+
+                    if (!markers.Add(power.Marker))
+                    {
+                        errors.Add($"The power marker \"{power.Marker}\" is listed more than once.");
+                    }
+                }
+            }
+
+            if (this.PronunciationGuideMarkers != null &&
+                (this.PronunciationGuideMarkers.Count != 2 ||
+                    this.PronunciationGuideMarkers.Any(marker => string.IsNullOrEmpty(marker))))
+            {
+                errors.Add("pronunciationGuideMarkers must have exactly two markers, the start and the end of a guide.");
+            }
+
+            return errors;
         }
 
         /// <summary>
@@ -121,6 +185,15 @@ namespace YetAnotherPacketParser
         {
             GameFormat copy = (GameFormat)this.MemberwiseClone();
             copy.Powers = this.Powers?.OrderByDescending(power => power.Points).ToArray();
+            return copy;
+        }
+
+        // A copy that shares nothing changeable with this format, so changing the copy's powers can't change this one
+        private GameFormat Clone()
+        {
+            GameFormat copy = (GameFormat)this.MemberwiseClone();
+            copy.Powers = this.Powers?.Select(power => new PowerMarker(power.Marker, power.Points)).ToArray();
+            copy.PronunciationGuideMarkers = this.PronunciationGuideMarkers?.ToArray();
             return copy;
         }
 

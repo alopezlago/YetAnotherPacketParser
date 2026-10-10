@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using YetAnotherPacketParser.Ast;
 
 namespace YetAnotherPacketParser.Compiler.Json
@@ -10,11 +11,12 @@ namespace YetAnotherPacketParser.Compiler.Json
     internal class JsonAnchoredBonusNode
     {
         private JsonAnchoredBonusNode(
-            string? leadin, ICollection<string>? parts, ICollection<string>? answers)
+            string? leadin, ICollection<string>? parts, ICollection<string>? answers, string canonicalHash)
         {
             this.Leadin = leadin;
             this.Parts = parts;
             this.Answers = answers;
+            this.CanonicalHash = canonicalHash;
         }
 
         public string? Leadin { get; }
@@ -22,6 +24,12 @@ namespace YetAnotherPacketParser.Compiler.Json
         public ICollection<string>? Parts { get; }
 
         public ICollection<string>? Answers { get; }
+
+        /// <summary>
+        /// The hash of the canonical leadin, then every part, then every answer. See
+        /// <see cref="Yapp2.HashCanonicalFields"/>.
+        /// </summary>
+        public string CanonicalHash { get; }
 
         /// <summary>
         /// Creates the anchored object for a bonus, or <c>null</c> when no field on it carries an anchor.
@@ -56,7 +64,8 @@ namespace YetAnotherPacketParser.Compiler.Json
             return new JsonAnchoredBonusNode(
                 leadinChanged ? anchoredLeadin : null,
                 partsChanged ? anchoredParts : null,
-                answersChanged ? anchoredAnswers : null);
+                answersChanged ? anchoredAnswers : null,
+                Yapp2.HashCanonicalFields(parts.Prepend(leadin).Concat(answers)));
         }
 
         private static bool HasAnyChange(IReadOnlyList<string> anchored, IReadOnlyList<string> canonical)

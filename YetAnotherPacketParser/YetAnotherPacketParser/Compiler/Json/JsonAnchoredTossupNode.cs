@@ -8,15 +8,21 @@ namespace YetAnotherPacketParser.Compiler.Json
     /// </summary>
     internal class JsonAnchoredTossupNode
     {
-        private JsonAnchoredTossupNode(string? question, string? answer)
+        private JsonAnchoredTossupNode(string? question, string? answer, string canonicalHash)
         {
             this.Question = question;
             this.Answer = answer;
+            this.CanonicalHash = canonicalHash;
         }
 
         public string? Question { get; }
 
         public string? Answer { get; }
+
+        /// <summary>
+        /// The hash of the canonical question and answer, in that order. See <see cref="Yapp2.HashCanonicalFields"/>.
+        /// </summary>
+        public string CanonicalHash { get; }
 
         /// <summary>
         /// Creates the anchored object for a tossup, or <c>null</c> when no field on it carries an anchor.
@@ -41,7 +47,8 @@ namespace YetAnotherPacketParser.Compiler.Json
 
             return new JsonAnchoredTossupNode(
                 questionChanged ? anchoredQuestion : null,
-                answerChanged ? anchoredAnswer : null);
+                answerChanged ? anchoredAnswer : null,
+                Yapp2.HashCanonicalFields([question, answer]));
         }
     }
 }

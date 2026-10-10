@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
+
 namespace YetAnotherPacketParser.Compiler.Json
 {
     /// <summary>
@@ -19,7 +24,22 @@ namespace YetAnotherPacketParser.Compiler.Json
         /// <remarks>1.1 also defines an optional "readingOrder" for packets whose tossups and bonuses interlace.
         /// That is never written here: the parser reads all of a document's tossups and then all of its bonuses, so
         /// a packet it produces is always in the default order, which is what omitting the field means. 1.2 adds
-        /// "gameFormat".</remarks>
-        public const string Version = "yapp2/1.2";
+        /// "gameFormat", and 1.3 adds "canonicalHash" to the anchored objects.</remarks>
+        public const string Version = "yapp2/1.3";
+
+        /// <summary>
+        /// Hashes the canonical fields an anchored object was made from, so a reader can tell when someone has edited
+        /// the canonical text since and the anchored text no longer matches it.
+        /// </summary>
+        /// <remarks>This is the lowercase hex SHA-256 of the fields' UTF-8 bytes, separated by U+0000, which can't
+        /// appear in question text. Readers recompute it from the strings in the JSON, so the format must not change
+        /// without a new version.</remarks>
+        /// <param name="canonicalFields">The canonical strings, in the order YAPP2_FORMAT.md gives for the question
+        /// type.</param>
+        public static string HashCanonicalFields(IEnumerable<string> canonicalFields)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(string.Join('\0', canonicalFields));
+            return Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        }
     }
 }

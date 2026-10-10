@@ -1,5 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -24,7 +28,7 @@ namespace YetAnotherPacketParserTests
             {
                 JsonElement root = document.RootElement;
                 Assert.AreEqual(
-                    "yapp2/1.2",
+                    "yapp2/1.3",
                     root.GetProperty("version").GetString(),
                     "Without the version marker a reader has to ignore the anchored fields");
 
@@ -131,6 +135,74 @@ namespace YetAnotherPacketParserTests
         }
 
         [TestMethod]
+        public async Task AnchoredTossupHasHashOfCanonicalFields()
+        {
+            string result = await Compile(CreatePacket(), yapp2Format: true);
+
+            using (JsonDocument document = JsonDocument.Parse(result))
+            {
+                JsonElement tossup = document.RootElement.GetProperty("tossups")[0];
+                string expectedHash = HashLikeAReader(
+                    tossup.GetProperty("question").GetString(), tossup.GetProperty("answer").GetString());
+                Assert.AreEqual(
+                    expectedHash,
+                    tossup.GetProperty("anchored").GetProperty("canonicalHash").GetString(),
+                    "A reader has to be able to recompute the hash from the canonical fields");
+            }
+        }
+
+        [TestMethod]
+        public async Task AnchoredBonusHasHashOfCanonicalFields()
+        {
+            PacketNode packet = new PacketNode(
+                [CreateTossup()],
+                [
+                    new BonusNode(
+                        1,
+                        new FormattedText([new FormattedTextSegment("A leadin.")]),
+                        [
+                            CreateBonusPart("Name this ", "Diderot", " (\"DID-er-OW\") work.", "Encyclopédie"),
+                            CreateBonusPart("Name this ", "Rousseau", " (\"roo-SOH\") work.", "Émile")
+                        ],
+                        null)
+                ]);
+
+            string result = await Compile(packet, yapp2Format: true);
+
+            using (JsonDocument document = JsonDocument.Parse(result))
+            {
+                JsonElement bonus = document.RootElement.GetProperty("bonuses")[0];
+                List<string> canonicalFields = [bonus.GetProperty("leadin").GetString()];
+                canonicalFields.AddRange(bonus.GetProperty("parts").EnumerateArray().Select(part => part.GetString()));
+                canonicalFields.AddRange(
+                    bonus.GetProperty("answers").EnumerateArray().Select(answer => answer.GetString()));
+
+                Assert.AreEqual(
+                    HashLikeAReader(canonicalFields.ToArray()),
+                    bonus.GetProperty("anchored").GetProperty("canonicalHash").GetString(),
+                    "The hash covers the leadin, then the parts, then the answers");
+            }
+        }
+
+        [TestMethod]
+        public void CanonicalHashIsStable()
+        {
+            // Readers in other languages compute this independently, so pin it to a known value
+            Assert.AreEqual(
+                "3907707cac5b0e7abf096548f7c6636aa2104c8f435c3a300239c2cf566ba074",
+                Yapp2.HashCanonicalFields(["Question", "Answer"]));
+        }
+
+        [TestMethod]
+        public void CanonicalHashSeparatesFields()
+        {
+            Assert.AreNotEqual(
+                Yapp2.HashCanonicalFields(["ab", "c"]),
+                Yapp2.HashCanonicalFields(["a", "bc"]),
+                "Moving text between fields is an edit, so it has to change the hash");
+        }
+
+        [TestMethod]
         public async Task AnchorInsideBoldedTextIsWellFormed()
         {
             PacketNode packet = new PacketNode(
@@ -216,7 +288,7 @@ namespace YetAnotherPacketParserTests
                 using (JsonDocument document = JsonDocument.Parse(convertResult.Result.Value))
                 {
                     JsonElement root = document.RootElement;
-                    Assert.AreEqual("yapp2/1.2", root.GetProperty("version").GetString());
+                    Assert.AreEqual("yapp2/1.3", root.GetProperty("version").GetString());
 
                     JsonElement tossup = root.GetProperty("tossups")[0];
                     Assert.AreEqual(
@@ -263,7 +335,7 @@ namespace YetAnotherPacketParserTests
             {
                 JsonElement root = document.RootElement;
                 Assert.AreEqual(
-                    "yapp2/1.2",
+                    "yapp2/1.3",
                     root.GetProperty("version").GetString(),
                     "A game format is something yapp2 has to say, even without anchors");
 
@@ -365,6 +437,64 @@ namespace YetAnotherPacketParserTests
         }
 
         [TestMethod]
+        public void ChangingAPresetCopysPowersDoesNotChangeThePreset()
+        {
+            Assert.IsTrue(GameFormat.TryGetPreset("pace", out GameFormat first));
+            first.Powers[0].Points = 99;
+
+            Assert.IsTrue(GameFormat.TryGetPreset("pace", out GameFormat second));
+            Assert.AreEqual(20, second.Powers[0].Points, "Changing a copy's power shouldn't change the preset");
+        }
+
+        [TestMethod]
+        public void PresetsAreValid()
+        {
+            foreach (string name in GameFormat.PresetNames)
+            {
+                Assert.IsTrue(GameFormat.TryGetPreset(name, out GameFormat gameFormat));
+                CollectionAssert.AreEqual(Array.Empty<string>(), gameFormat.Validate().ToArray(), $"{name} should be valid");
+            }
+        }
+
+        [TestMethod]
+        public void EmptyGameFormatIsValid()
+        {
+            Assert.AreEqual(0, new GameFormat().Validate().Count, "Unset fields should always be valid");
+        }
+
+        [TestMethod]
+        public void GameFormatWithoutOvertimeIsValid()
+        {
+            GameFormat gameFormat = new GameFormat() { MinimumOvertimeQuestionCount = 0 };
+            Assert.AreEqual(0, gameFormat.Validate().Count, "Games that end in ties have no overtime");
+        }
+
+        [TestMethod]
+        public void InvalidGameFormatValuesAreReported()
+        {
+            GameFormat gameFormat = new GameFormat()
+            {
+                RegulationTossupCount = 0,
+                MinimumOvertimeQuestionCount = -1,
+                NegValue = 5,
+                TimeoutsAllowed = -1,
+                Powers = [new PowerMarker("(*)", 0), new PowerMarker("(*)", 15), new PowerMarker("", 10)],
+                PronunciationGuideMarkers = ["(\""]
+            };
+
+            IReadOnlyList<string> errors = gameFormat.Validate();
+            Assert.AreEqual(8, errors.Count, $"Unexpected errors: {string.Join("; ", errors)}");
+            Assert.IsTrue(errors.Any(error => error.Contains("regulationTossupCount")), "Missing tossup count error");
+            Assert.IsTrue(errors.Any(error => error.Contains("minimumOvertimeQuestionCount")), "Missing overtime error");
+            Assert.IsTrue(errors.Any(error => error.Contains("negValue")), "Missing neg error");
+            Assert.IsTrue(errors.Any(error => error.Contains("timeoutsAllowed")), "Missing timeouts error");
+            Assert.IsTrue(errors.Any(error => error.Contains("more than once")), "Missing duplicate marker error");
+            Assert.IsTrue(errors.Any(error => error.Contains("needs a marker")), "Missing empty marker error");
+            Assert.IsTrue(errors.Any(error => error.Contains("positive number of points")), "Missing points error");
+            Assert.IsTrue(errors.Any(error => error.Contains("pronunciationGuideMarkers")), "Missing guide error");
+        }
+
+        [TestMethod]
         public async Task MismatchedGameFormatIsLogged()
         {
             using (MemoryStream stream = DocxBuilder.CreateDocx(
@@ -412,6 +542,13 @@ namespace YetAnotherPacketParserTests
                         null)
                 ],
                 bonuses: null);
+        }
+
+        // The algorithm YAPP2_FORMAT.md gives readers, written independently of Yapp2.HashCanonicalFields
+        private static string HashLikeAReader(params string[] canonicalFields)
+        {
+            byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("\0", canonicalFields)));
+            return string.Concat(hash.Select(b => b.ToString("x2", System.Globalization.CultureInfo.InvariantCulture)));
         }
 
         private static async Task<string> Compile(PacketNode packet, bool yapp2Format, GameFormat gameFormat = null)

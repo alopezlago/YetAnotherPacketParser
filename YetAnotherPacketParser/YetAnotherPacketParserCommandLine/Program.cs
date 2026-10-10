@@ -165,7 +165,7 @@ namespace YetAnotherPacketParserCommandLine
             Console.WriteLine($"Output written to {options.Output}");
         }
 
-        // Writes the error and returns null if the value is neither a known format nor a readable format file
+        // Writes the error and returns null if the value is neither a known format nor a readable, valid format file
         private static async Task<GameFormat> GetGameFormatAsync(string value)
         {
             if (GameFormat.TryGetPreset(value, out GameFormat preset))
@@ -190,6 +190,16 @@ namespace YetAnotherPacketParserCommandLine
                     if (gameFormat == null)
                     {
                         await Console.Error.WriteLineAsync($"Game format file {value} is empty.").ConfigureAwait(true);
+                        return null;
+                    }
+
+                    IReadOnlyList<string> errors = gameFormat.Validate();
+                    if (errors.Count > 0)
+                    {
+                        await Console.Error.WriteLineAsync(
+                            $"The game format in {value} isn't valid:\n {string.Join("\n ", errors)}")
+                            .ConfigureAwait(true);
+                        return null;
                     }
 
                     return gameFormat;

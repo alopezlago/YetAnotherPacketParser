@@ -10,9 +10,11 @@ It exists to carry things plain YAPP cannot:
 - **the order a packet is read in** when tossups and bonuses interlace (1.1), and
 - **the rules of the game the packet is written for** — regulation length, power markers
   and their values, neg value, and so on — so a reader doesn't have to set the game up
-  by hand each time (1.2).
+  by hand each time (1.2), and
+- **a hash of the text each anchored question was made from**, so a reader can tell when
+  the canonical text has been edited since and the anchors may no longer fit it (1.3).
 
-Version: **`yapp2/1.2`**.
+Version: **`yapp2/1.3`**.
 
 ## The problem
 
@@ -41,7 +43,7 @@ would have them, and the anchored variants live beside them.
 
 ```json
 {
-  "version": "yapp2/1.2",
+  "version": "yapp2/1.3",
   "name": "Round 1",
   "gameFormat": {
     "displayName": "mACF with powers",
@@ -61,7 +63,8 @@ would have them, and the anchored variants live beside them.
       "answer": "<b><u>Encyclopédie</u></b>",
       "metadata": "A Writer, Literature - European",
       "anchored": {
-        "question": "Denis <pg>Diderot</pg> (\"DID-er-OW\") edited this work."
+        "question": "Denis <pg>Diderot</pg> (\"DID-er-OW\") edited this work.",
+        "canonicalHash": "d9faa5084611cecf01eef6236bc2a5ae4806c3f882592ee709d6ea94edfb43fa"
       }
     }
   ],
@@ -73,7 +76,8 @@ would have them, and the anchored variants live beside them.
       "answers": ["...", "..."],
       "values": [10, 10],
       "anchored": {
-        "parts": ["A <pg>part</pg> (\"PART\") here.", "No anchor in this one."]
+        "parts": ["A <pg>part</pg> (\"PART\") here.", "No anchor in this one."],
+        "canonicalHash": "…"
       }
     }
   ]
@@ -207,8 +211,8 @@ added, and **only** the fields that actually contain an anchor:
 
 | Question type | Allowed keys |
 |---|---|
-| tossup | `question`, `answer` |
-| bonus | `leadin`, `parts`, `answers` |
+| tossup | `question`, `answer`, `canonicalHash` |
+| bonus | `leadin`, `parts`, `answers`, `canonicalHash` |
 
 Rules:
 
@@ -220,6 +224,41 @@ Rules:
   length mismatch must ignore that array rather than pair strings up wrongly.
 - Apart from `<pg>` tags, an anchored string must be identical to its canonical
   counterpart. Anything else (a different answer, extra words) is malformed.
+
+#### `canonicalHash`
+
+*Added in 1.3.* A string on every `anchored` object: a hash of the canonical fields the
+anchored text was made from. Packets get edited by hand after they're produced, and an
+editor that knows nothing about YAPP2 fixes a typo in `question` without touching
+`anchored`. The anchored text is then out of date, and a reader that prefers it would
+undo the fix. The hash lets a reader catch that.
+
+It is the **lowercase hex SHA-256** of the canonical strings, **UTF-8 encoded** and
+**joined with U+0000** (a NUL character, which can't appear in question text):
+
+| Question type | Fields, in order |
+|---|---|
+| tossup | `question`, `answer` |
+| bonus | `leadin`, every element of `parts`, every element of `answers` |
+
+The strings are the values as decoded from the JSON, with no other normalization. The
+hash covers every canonical field of the question, not only the ones `anchored` repeats,
+so editing any of them invalidates the whole `anchored` object. For the tossup above:
+
+```
+SHA-256(UTF-8("Denis Diderot (\"DID-er-OW\") edited this work." + "\u0000" + "<b><u>Encyclopédie</u></b>"))
+= d9faa5084611cecf01eef6236bc2a5ae4806c3f882592ee709d6ea94edfb43fa
+```
+
+Rules:
+
+- **A mismatch means the anchored object is stale.** A reader that finds a
+  `canonicalHash` that doesn't match must ignore that question's whole `anchored` object
+  and use the canonical fields. It loses the anchors on that question and nothing else.
+- **No hash means no check.** Files from 1.0–1.2 have none, and a reader uses their
+  `anchored` objects as before.
+- **A producer that edits the canonical text must update it.** Recompute the hash when
+  the anchored text is updated to match, or drop the `anchored` object when it can't be.
 
 ### The `<pg>` tag
 
@@ -272,6 +311,8 @@ if version starts with "yapp2/":
         apply each gameFormat key that is well-formed; ignore the rest
         let the moderator still change any of it
     for each question:
+        if anchored.canonicalHash is present and doesn't match the canonical fields:
+            ignore anchored for this question
         for each field:
             use anchored[field] if present (and, for arrays, the same length)
             else use the canonical field
@@ -292,7 +333,7 @@ nothing by always preferring the anchored text.
   `Yapp2Format` on `JsonPacketCompilerOptions`. Anchors come from colored text that a guide immediately
   follows in a .docx file (`Lexer/PronunciationAnchorFilter.cs`) or from `<pg>` tags in an HTML file
   (`Lexer/HtmlLexer.cs`); `Compiler/Json/JsonAnchoredTossupNode.cs` and `JsonAnchoredBonusNode.cs` write the
-  `anchored` objects. It never writes `readingOrder`, since it always reads a document's tossups and then its
+  `anchored` objects, each with a `canonicalHash` (`Compiler/Json/Yapp2.cs`). It never writes `readingOrder`, since it always reads a document's tossups and then its
   bonuses. It writes `gameFormat` from `-g`/`--gameFormat` on the command line (`acf`, `macf`, `pace`, or a
   JSON file), `?gameFormat=` on the API (the named formats only), or `GameFormat` on `JsonPacketCompilerOptions`,
   and logs a warning when a power marker isn't in any tossup. It writes plain YAPP when a packet has no anchors
@@ -308,9 +349,10 @@ nothing by always preferring the anchored text.
   MODAQ already plays a packet interlaced — a tossup, then its bonus — so `readingOrder`
   does not change how a game runs there; it is kept so a load/export round trip doesn't
   silently drop it. That repo and QEMS carry copies of this document.
-- `gameFormat` (1.2) is new: QEMS doesn't write it and MODAQ doesn't apply it yet. A
-  reader that follows the version rule above still reads a 1.2 file, ignoring
-  `gameFormat`.
+- `gameFormat` (1.2) and `canonicalHash` (1.3) are new: QEMS doesn't write them, and
+  MODAQ doesn't apply the format or check the hash yet. A reader that follows the version
+  rule above still reads a 1.3 file, ignoring both. MODAQ's export writes `anchored` back
+  out, so once it edits question text it also needs to recompute or drop the hash.
 
 ## Why not other approaches
 

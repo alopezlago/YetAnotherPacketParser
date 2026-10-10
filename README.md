@@ -70,21 +70,22 @@ words a pronunciation guide covers, and the rules of the game the packet is writ
 
 The format is specified in [YAPP2_FORMAT.md](YAPP2_FORMAT.md). A yapp2 packet is the same packet, plus
 
-- a top-level `"version": "yapp2/1.2"`,
+- a top-level `"version": "yapp2/1.3"`,
 - an `anchored` object on any question that has an anchor, holding the same text with `<pg>` tags around the anchored
-  words, and
+  words and a `canonicalHash` of the plain text it was made from, and
 - a top-level `gameFormat` object, when you give YAPP one.
 
 ```json
 {
-  "version": "yapp2/1.2",
+  "version": "yapp2/1.3",
   "tossups": [
     {
       "number": 1,
       "question": "Denis Diderot (\"DID-er-OW\") edited this work.",
       "answer": "<b><u>Encyclopédie</u></b>",
       "anchored": {
-        "question": "Denis <pg>Diderot</pg> (\"DID-er-OW\") edited this work."
+        "question": "Denis <pg>Diderot</pg> (\"DID-er-OW\") edited this work.",
+        "canonicalHash": "d9faa5084611cecf01eef6236bc2a5ae4806c3f882592ee709d6ea94edfb43fa"
       }
     }
   ]
@@ -95,6 +96,10 @@ The canonical fields are byte-for-byte what YAPP writes without yapp2, and the t
 a reader that has never heard of yapp2 reads a yapp2 packet correctly and ignores the extra fields. `anchored` is left
 off entirely when a question has no anchors, which is most of them. A packet with no anchors and no game format is
 written as plain JSON, with no `version`, since it has nothing yapp2 to say.
+
+`canonicalHash` is there because packets get edited by hand after they're parsed. If someone fixes a typo in `question`
+and leaves `anchored` alone, the hash no longer matches, and a reader knows to fall back to the canonical text rather
+than undo the fix. [YAPP2_FORMAT.md](YAPP2_FORMAT.md#canonicalhash) gives the exact algorithm.
 
 The anchored words are ordinary question words: they are read aloud, they count toward word counts, and they are
 buzzable. The guide itself is none of those things.
