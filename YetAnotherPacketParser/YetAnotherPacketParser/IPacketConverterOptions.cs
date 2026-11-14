@@ -35,6 +35,23 @@ namespace YetAnotherPacketParser
         public bool ModaqFormat { get; }
 
         /// <summary>
+        /// When <c>true</c>, writes JSON output in the yapp2 format, which adds a version marker and per-question
+        /// anchored fields saying which words a pronunciation guide covers. The canonical fields are unchanged, so
+        /// readers that don't know yapp2 read the packet the same way either way.
+        /// </summary>
+        /// <remarks>This has a default implementation so that existing implementations of this interface keep
+        /// compiling.</remarks>
+        public bool Yapp2Format => false;
+
+        /// <summary>
+        /// The rules of the game the packet is written for, such as the regulation tossup count and power values.
+        /// Only written in the yapp2 format, where it lets a reader set up the game from the packet.
+        /// </summary>
+        /// <remarks>This has a default implementation so that existing implementations of this interface keep
+        /// compiling.</remarks>
+        public GameFormat? GameFormat => null;
+
+        /// <summary>
         /// When <c>true</c>, pretty prints the output.
         /// </summary>
         public bool PrettyPrint { get; }

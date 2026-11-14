@@ -66,6 +66,17 @@ namespace YetAnotherPacketParser
             return $"Failed to parse {context}. No more lines found. Number of lines searched for after the last part: {linesChecked}";
         }
 
+        public static string PowerMarkerNotFound(string packetName, string marker)
+        {
+            return $"{packetName}: Warning: the game format's power marker \"{marker}\" isn't in any tossup.";
+        }
+
+        public static string FewerTossupsThanRegulation(string packetName, int tossupsCount, int regulationTossupCount)
+        {
+            return $"{packetName}: Warning: the packet has {tossupsCount} tossup(s), but the game format has " +
+                $"{regulationTossupCount} in regulation.";
+        }
+
         public static string NonThreePartBonusesFound(IEnumerable<int> bonusNumbers)
         {
             string bonusNumbersText = string.Join(", ", bonusNumbers);

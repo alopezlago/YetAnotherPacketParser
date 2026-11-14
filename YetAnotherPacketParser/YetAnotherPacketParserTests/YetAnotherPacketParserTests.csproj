@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Used to build .docx files in memory for the lexer tests -->
+    <PackageReference Include="DocumentFormat.OpenXml" Version="2.20.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="3.4.3" />
     <PackageReference Include="MSTest.TestFramework" Version="3.0.4" />

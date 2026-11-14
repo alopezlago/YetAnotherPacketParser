@@ -67,7 +67,8 @@ namespace YetAnotherPacketParser.Lexer
                                     previousFormatting.Bolded,
                                     previousFormatting.Underlined,
                                     previousFormatting.Subscripted,
-                                    previousFormatting.Superscripted)
+                                    previousFormatting.Superscripted,
+                                    previousFormatting.PronunciationAnchor)
                             ]));
                     }
 
@@ -147,14 +148,15 @@ namespace YetAnotherPacketParser.Lexer
                     formatting.Bolded,
                     formatting.Underlined,
                     formatting.Subscripted,
-                    formatting.Superscripted));
+                    formatting.Superscripted,
+                    formatting.PronunciationAnchor));
                 return;
             }
 
             bool isElement = node.NodeType == NodeType.Element;
             IElement? element = node as Element;
 
-            // Need to change formatting if it's B/REQ, U, I/EM, SUB, or SUP. For other ones, just call GetString on
+            // Need to change formatting if it's B/REQ, U, I/EM, SUB, SUP, or PG. For other ones, just call GetString on
             // the child.
             if (isElement && element != null)
             {
@@ -210,6 +212,11 @@ namespace YetAnotherPacketParser.Lexer
                 case "SUP":
                     formatting.Superscripted = value;
                     break;
+                case "PG":
+                    // The yapp2 tag for the word(s) a pronunciation guide covers. Unlike the colored text in a docx
+                    // file, the tag is explicit, so it's an anchor whether or not a guide follows it.
+                    formatting.PronunciationAnchor = value;
+                    break;
                 default:
                     break;
             }
@@ -225,6 +232,8 @@ namespace YetAnotherPacketParser.Lexer
             public bool Superscripted { get; set; }
 
             public bool Subscripted { get; set; }
+
+            public bool PronunciationAnchor { get; set; }
         }
     }
 }

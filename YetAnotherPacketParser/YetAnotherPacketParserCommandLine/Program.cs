@@ -13,6 +13,15 @@ namespace YetAnotherPacketParserCommandLine
 {
     public static class Program
     {
+        // Case-insensitive so a game format file can use either the JSON field names or the C# ones. Fields YAPP
+        // doesn't write, like MODAQ's version field, are ignored.
+        private static readonly JsonSerializerOptions GameFormatSerializerOptions = new JsonSerializerOptions()
+        {
+            PropertyNameCaseInsensitive = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true
+        };
+
         public static void Main(string[] args)
         {
             MainAsync(args).ConfigureAwait(false).GetAwaiter().GetResult();
@@ -49,15 +58,37 @@ namespace YetAnotherPacketParserCommandLine
 
             IPacketConverterOptions packetCompilerOptions;
             Action<LogLevel, string> log = (logLevel, message) => Log(options, logLevel, message);
-            switch (options.OutputFormat.Trim().ToUpper(CultureInfo.CurrentCulture))
+            string outputFormat = options.OutputFormat.Trim().ToUpper(CultureInfo.CurrentCulture);
+
+            GameFormat gameFormat = null;
+            if (!string.IsNullOrWhiteSpace(options.GameFormat))
+            {
+                if (outputFormat != "YAPP2")
+                {
+                    await Console.Error.WriteLineAsync(
+                        "The game format is only written in the yapp2 format. Use -f yapp2.").ConfigureAwait(true);
+                    return;
+                }
+
+                gameFormat = await GetGameFormatAsync(options.GameFormat).ConfigureAwait(true);
+                if (gameFormat == null)
+                {
+                    return;
+                }
+            }
+
+            switch (outputFormat)
             {
                 case "JSON":
+                case "YAPP2":
                     packetCompilerOptions = new JsonPacketCompilerOptions()
                     {
                         StreamName = options.Input,
                         PrettyPrint = options.PrettyPrint,
                         Log = log,
-                        ModaqFormat = options.ForModaq
+                        ModaqFormat = options.ForModaq,
+                        Yapp2Format = outputFormat == "YAPP2",
+                        GameFormat = gameFormat
                     };
                     break;
                 case "HTML":
@@ -68,7 +99,7 @@ namespace YetAnotherPacketParserCommandLine
                     };
                     break;
                 default:
-                    await Console.Error.WriteLineAsync("Invalid format. Valid formats: json, html").ConfigureAwait(true);
+                    await Console.Error.WriteLineAsync("Invalid format. Valid formats: json, yapp2, html").ConfigureAwait(true);
                     return;
             }
 
@@ -132,6 +163,54 @@ namespace YetAnotherPacketParserCommandLine
             }
 
             Console.WriteLine($"Output written to {options.Output}");
+        }
+
+        // Writes the error and returns null if the value is neither a known format nor a readable, valid format file
+        private static async Task<GameFormat> GetGameFormatAsync(string value)
+        {
+            if (GameFormat.TryGetPreset(value, out GameFormat preset))
+            {
+                return preset;
+            }
+
+            if (!File.Exists(value))
+            {
+                await Console.Error.WriteLineAsync(
+                    $"Unknown game format {value}. Use one of {string.Join(", ", GameFormat.PresetNames)}, or the " +
+                    "path to a JSON file with the format.").ConfigureAwait(true);
+                return null;
+            }
+
+            try
+            {
+                using (FileStream stream = File.OpenRead(value))
+                {
+                    GameFormat gameFormat = await JsonSerializer.DeserializeAsync<GameFormat>(
+                        stream, GameFormatSerializerOptions).ConfigureAwait(true);
+                    if (gameFormat == null)
+                    {
+                        await Console.Error.WriteLineAsync($"Game format file {value} is empty.").ConfigureAwait(true);
+                        return null;
+                    }
+
+                    IReadOnlyList<string> errors = gameFormat.Validate();
+                    if (errors.Count > 0)
+                    {
+                        await Console.Error.WriteLineAsync(
+                            $"The game format in {value} isn't valid:\n {string.Join("\n ", errors)}")
+                            .ConfigureAwait(true);
+                        return null;
+                    }
+
+                    return gameFormat;
+                }
+            }
+            catch (JsonException ex)
+            {
+                await Console.Error.WriteLineAsync($"Couldn't read the game format in {value}: {ex.Message}")
+                    .ConfigureAwait(true);
+                return null;
+            }
         }
 
         private static void Log(CommandLineOptions options, LogLevel logLevel, string message)

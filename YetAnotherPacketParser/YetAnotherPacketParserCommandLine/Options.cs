@@ -18,7 +18,8 @@ namespace YetAnotherPacketParserCommandLine
         [Option(
             'f',
             "format",
-            HelpText = "Output format. The possible values are 'json' and 'html'. JSON is the default format.",
+            HelpText = "Output format. The possible values are 'json', 'yapp2' and 'html'. JSON is the default format. " +
+                "yapp2 is JSON plus the pronunciation guide anchoring from colored text in the document.",
             Default = "json")]
         public string OutputFormat { get; set; }
 
@@ -29,6 +30,15 @@ namespace YetAnotherPacketParserCommandLine
             Required = false,
             Default = false)]
         public bool ForModaq { get; set; }
+
+        [Option(
+            'g',
+            "gameFormat",
+            HelpText = "The rules of the game the packet is for, written into yapp2 output so readers don't have to " +
+                "set them up. Either a format name ('acf', 'macf' for ACF with 15-point powers, or 'pace'), or the " +
+                "path to a JSON file with the format, using MODAQ's game format field names. Requires -f yapp2.",
+            Required = false)]
+        public string GameFormat { get; set; }
 
         [Option('v', "verbose", HelpText = "Verbose logging", Required = false, Default = false)]
         public bool Verbose { get; set; }

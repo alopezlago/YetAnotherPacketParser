@@ -145,6 +145,7 @@ namespace YetAnotherPacketParser.Lexer
             bool underlined = false;
             bool subscripted = false;
             bool superscripted = false;
+            bool colored = false;
 
             List<ILine> lines = new List<ILine>();
             foreach (TextBlockLine textBlockLine in textBlockLines)
@@ -160,6 +161,7 @@ namespace YetAnotherPacketParser.Lexer
                     bool blockUnderlined = false;
                     bool blockSubscripted = false;
                     bool blockSuperscripted = false;
+                    bool blockColored = false;
                     if (textBlock.Properties != null)
                     {
                         string? verticalTextAlignmentVal = textBlock.Properties.VerticalTextAlignment?.Val?.ToString();
@@ -169,20 +171,28 @@ namespace YetAnotherPacketParser.Lexer
                         blockUnderlined = textBlock.Properties.Underline != null;
                         blockSubscripted = verticalTextAlignmentVal == "subscript";
                         blockSuperscripted = verticalTextAlignmentVal == "superscript";
+                        blockColored = IsColored(textBlock.Properties.Color);
                     }
 
                     if (blockBolded != bolded ||
                         blockItalic != italic ||
                         blockUnderlined != underlined ||
                         blockSubscripted != subscripted ||
-                        blockSuperscripted != superscripted)
+                        blockSuperscripted != superscripted ||
+                        blockColored != colored)
                     {
                         // Formatting has changed. This means the last segment finished. Add it if it has anything.
                         if (currentSegment.Length > 0)
                         {
                             formattedTextSegments.Add(
                                 new FormattedTextSegment(
-                                    currentSegment.ToString(), italic, bolded, underlined, subscripted, superscripted));
+                                    currentSegment.ToString(),
+                                    italic,
+                                    bolded,
+                                    underlined,
+                                    subscripted,
+                                    superscripted,
+                                    colored));
                             currentSegment.Clear();
                         }
 
@@ -192,6 +202,7 @@ namespace YetAnotherPacketParser.Lexer
                         underlined = blockUnderlined;
                         subscripted = blockSubscripted;
                         superscripted = blockSuperscripted;
+                        colored = blockColored;
                     }
 
                     currentSegment.Append(textBlock.Text);
@@ -211,9 +222,13 @@ namespace YetAnotherPacketParser.Lexer
                 if (currentSegment.Length > 0)
                 {
                     formattedTextSegments.Add(new FormattedTextSegment(
-                        currentSegment.ToString(), italic, bolded, underlined, subscripted, superscripted));
+                        currentSegment.ToString(), italic, bolded, underlined, subscripted, superscripted, colored));
                     currentSegment.Clear();
                 }
+
+                // Colored text is only a pronunciation-guide anchor when a guide follows it, and that can only be
+                // known once the whole line is available
+                formattedTextSegments = PronunciationAnchorFilter.RemoveAnchorsWithoutGuides(formattedTextSegments);
 
                 // If the numbering Ids have changed, we're no longer in the same numbered list. Reset the number we're
                 // counting.
@@ -281,6 +296,32 @@ namespace YetAnotherPacketParser.Lexer
             }
 
             return lines;
+        }
+
+        /// <summary>
+        /// Whether a run is written in a color other than the document's ordinary text color.
+        /// </summary>
+        /// <remarks>Colored text matters because authoring tools tint the word(s) a pronunciation guide covers. See
+        /// <see cref="PronunciationAnchorFilter"/> for how a tint becomes an anchor.</remarks>
+        private static bool IsColored(Color? color)
+        {
+            if (color == null)
+            {
+                return false;
+            }
+
+            string? value = color.Val?.Value;
+            if (value == null)
+            {
+                // A themed color has no explicit value. "windowText" is the theme's ordinary text color.
+                string? themeColor = color.ThemeColor?.Value.ToString();
+                return themeColor != null && !themeColor.Equals("windowText", StringComparison.OrdinalIgnoreCase);
+            }
+
+            // "auto" lets Word pick a color for contrast, which gives black on the white background packets use
+            return !value.Equals("auto", StringComparison.OrdinalIgnoreCase) &&
+                !value.Equals("000000", StringComparison.OrdinalIgnoreCase) &&
+                !value.Equals("000", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
